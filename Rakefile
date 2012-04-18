@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 require "rubygems"
 require "rake"
 
@@ -12,17 +13,15 @@ def runner name
 end
 
 
+desc "動作確認用 VM をセットアップ"
+task :vm => [ "vm:guest", "vm:dhcpd" ]
+
 namespace :vm do
-  task :guest => runner( :guest )
-  task :dhcpd => runner( :dhcpd )
-
-
-  file runner( :guest ) do
-    sh "sudo vmbuilder kvm ubuntu --suite oneiric -d #{ File.join( vmdir, "guest" ) } --verbose"
-  end
-
-  file runner( :dhcpd ) do
-    sh "sudo vmbuilder kvm ubuntu --suite oneiric -d #{ File.join( vmdir, "dhcpd" ) } --verbose"
+  [ :guest, :dhcpd ].each do | each |
+    task each => runner( each )
+    file runner( each ) do
+      sh "sudo vmbuilder kvm ubuntu --suite oneiric -d #{ File.join( vmdir, each.to_s ) } --overwrite"
+    end
   end
 end
 
