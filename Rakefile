@@ -163,6 +163,16 @@ end
 desc "run guest VM"
 task "run:guest" do
   cd File.join( tmp_dir, "vm", "guest" ) do
+    qcow2 = Dir.glob( "*.qcow2" ).first
+    mac = "00:11:22:EE:EE:02"
+    File.open( "run.sh", "w" ) do | f |
+      f.puts <<-EOF
+#!/bin/sh
+
+exec kvm -m 128 -smp 1 -drive file=#{ qcow2 } -net nic,macaddr=#{ mac } -net tap,ifname=tap1,script=../../../ovs-ifup,downscript=../../../ovs-ifdown "$@"
+EOF
+    end
+    sh "chmod +x ./run.sh"
     sh "sudo ./run.sh"
   end
 end
@@ -171,6 +181,16 @@ end
 desc "run dhcpd VM"
 task "run:dhcpd" do
   cd File.join( tmp_dir, "vm", "dhcpd" ) do
+    qcow2 = Dir.glob( "*.qcow2" ).first
+    mac = "00:11:22:EE:EE:01"
+    File.open( "run.sh", "w" ) do | f |
+      f.puts <<-EOF
+#!/bin/sh
+
+exec kvm -m 128 -smp 1 -drive file=#{ qcow2 } -net nic,macaddr=#{ mac } -net tap,ifname=tap0,script=../../../ovs-ifup,downscript=../../../ovs-ifdown "$@"
+EOF
+    end
+    sh "chmod +x ./run.sh"
     sh "sudo ./run.sh"
   end
 end
