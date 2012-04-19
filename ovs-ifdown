@@ -1,0 +1,5 @@
+#!/bin/sh
+
+switch='br0'
+/sbin/ifconfig $1 0.0.0.0 down
+/home/yasuhito/play/hitoritabi/objects/bin/ovs-vsctl del-port ${switch} $1
