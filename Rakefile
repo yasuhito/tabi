@@ -155,60 +155,58 @@ end
 # KVM
 ################################################################################
 
-def vmdir
-  File.join File.dirname( __FILE__ ), "tmp", "vm"
+def vm_dir name
+  File.join File.dirname( __FILE__ ), "tmp", "vm", name.to_s
 end
 
 
-def runner name
-  File.join vmdir, name.to_s, "run.sh"
+def run_sh name
+  File.join vm_dir( name ), "run.sh"
 end
 
 
-desc "動作確認用 VM をセットアップ"
-task :vm => [ "vm:guest", "vm:dhcpd" ]
+def mac_address name
+  { :dhcpd => "00:11:22:EE:EE:01", :guest => "00:11:22:EE:EE:02" }[ name ]
+end
 
-namespace :vm do
-  [ :guest, :dhcpd ].each do | each |
-    task each => runner( each )
-    file runner( each ) do
-      sh "sudo vmbuilder kvm ubuntu --suite oneiric -d #{ File.join( vmdir, each.to_s ) } --overwrite"
-    end
+
+def qcow2 name
+  Dir.glob( File.join( vmdir( name ), "/*.qcow2" ) ).first  
+end
+
+
+def maybe_buildvm name
+  if qcow2( name ).nil?
+    sh "sudo vmbuilder kvm ubuntu --suite oneiric -d #{ vm_dir name } --overwrite"
   end
 end
 
 
-desc "run guest VM"
-task "run:guest" do
-  cd File.join( tmp_dir, "vm", "guest" ) do
-    qcow2 = Dir.glob( "*.qcow2" ).first
-    mac = "00:11:22:EE:EE:02"
-    File.open( "run.sh", "w" ) do | f |
-      f.puts <<-EOF
+def create_run_sh name
+  File.open( run_sh( name ), "w" ) do | f |
+    f.puts <<-EOF
 #!/bin/sh
 
-exec kvm -m 128 -smp 1 -drive file=#{ qcow2 } -net nic,macaddr=#{ mac } -net tap,ifname=tap1,script=../../../ovs-ifup,downscript=../../../ovs-ifdown "$@"
+exec kvm -m 128 -smp 1 -drive file=#{ qcow2 name } -net nic,macaddr=#{ mac_address name } -net tap,ifname=tap1,script=../../../ovs-ifup,downscript=../../../ovs-ifdown "$@"
 EOF
-    end
-    sh "chmod +x ./run.sh"
-    sh "sudo ./run.sh"
   end
+  sh "chmod +x #{ run_sh( name ) }"
 end
 
 
-desc "run dhcpd VM"
-task "run:dhcpd" do
-  cd File.join( tmp_dir, "vm", "dhcpd" ) do
-    qcow2 = Dir.glob( "*.qcow2" ).first
-    mac = "00:11:22:EE:EE:01"
-    File.open( "run.sh", "w" ) do | f |
-      f.puts <<-EOF
-#!/bin/sh
+[ :guest, :dhcpd ].each do | each |
+  file run_sh( each ) do | t |
+    maybe_buildvm each
+    create_run_sh each
+  end
 
-exec kvm -m 128 -smp 1 -drive file=#{ qcow2 } -net nic,macaddr=#{ mac } -net tap,ifname=tap0,script=../../../ovs-ifup,downscript=../../../ovs-ifdown "$@"
-EOF
+
+  namespace :run do
+    desc "run #{ each } VM"
+    task each => run_sh( each ) do
+      cd vm_dir( each ) do
+        sh "sudo ./run.sh"
+      end
     end
-    sh "chmod +x ./run.sh"
-    sh "sudo ./run.sh"
   end
 end
