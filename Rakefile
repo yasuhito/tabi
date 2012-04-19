@@ -32,11 +32,20 @@ end
 # clean and clobber
 ################################################################################
 
+def openvswitch_dir
+  File.join vendor_dir, "openvswitch-1.4.0"
+end
+
+
 CLOBBER.include "objects"
+CLOBBER.include openvswitch_dir
+
 
 task :clean do
-  cd openvswitch_dir do
-    sh "make clean"
+  if FileTest.exists?( openvswitch_dir )
+    cd openvswitch_dir do
+      sh "make clean"
+    end
   end
 end
 
@@ -44,11 +53,6 @@ end
 ################################################################################
 # Open vSwitch
 ################################################################################
-
-def openvswitch_dir
-  File.join vendor_dir, "openvswitch-1.4.0"
-end
-
 
 def openvswitch_localstate_dir
   File.join tmp_dir, "openvswitch"
@@ -66,6 +70,9 @@ end
 
 
 task :openvswitch do
+  cd vendor_dir do
+    sh "tar xzvf openvswitch-1.4.0.tar.gz"
+  end
   cd openvswitch_dir do
     sh "./configure --prefix=#{ objects_dir } --localstatedir=#{ openvswitch_localstate_dir } --sysconfdir=#{ tmp_dir }"
     sh "make"
