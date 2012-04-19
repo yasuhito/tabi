@@ -115,15 +115,33 @@ def vsctl
 end
 
 
+def openvswitch_makefile
+  File.join openvswitch_dir, "Makefile"
+end
+
+
+namespace :build do
+  task :db_server => db_server
+  file db_server => [ openvswitch_makefile ] do
+    Rake::Task[ :openvswitch ].invoke
+  end
+
+
+  task :vswitch => vswitchd
+  file vswitchd => [ openvswitch_makefile ] do
+    Rake::Task[ :openvswitch ].invoke
+  end
+end
+
+
 namespace :run do
-  desc "(Re-)start db server"
-  task :db_server do
+  task :db_server => "build:db_server" do
     maybe_restart_db_server
     sh "#{ db_server } --remote=#{ db_server_socket } --remote=db:Open_vSwitch,manager_options --pidfile --detach"
   end
 
   desc "start vswitch"
-  task :vswitch => :db_server do
+  task :vswitch => [ "build:vswitch", :db_server ] do
     maybe_restart_vswitch
     sh "sudo #{ vswitchd } --log-file --pidfile --detach"
     sh "#{ vsctl } del-br br0"
