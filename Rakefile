@@ -187,6 +187,19 @@ namespace :run do
 end
 
 
+namespace :kill do
+  desc "kill db server"
+  task :db_server do
+    maybe_kill_db_server
+  end
+
+  desc "kill vswitch"
+  task :vswitch do
+    maybe_kill_vswitch
+  end
+end
+
+
 ################################################################################
 # KVM
 ################################################################################
