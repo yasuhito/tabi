@@ -69,18 +69,6 @@ def db_server_socket
 end
 
 
-task :openvswitch do
-  cd vendor_dir do
-    sh "tar xzvf openvswitch-1.4.0.tar.gz"
-  end
-  cd openvswitch_dir do
-    sh "./configure --prefix=#{ objects_dir } --localstatedir=#{ openvswitch_localstate_dir } --sysconfdir=#{ tmp_dir }"
-    sh "make"
-    sh "make install"
-  end
-end
-
-
 def vswitch_run_dir
   File.join tmp_dir, "openvswitch", "run", "openvswitch"
 end
@@ -101,6 +89,11 @@ def maybe_kill_db_server
     pid = `cat #{ db_server_pid }`.chomp
     sh "kill #{ pid }"
   end
+end
+
+
+def start_db_server
+  sh "#{ db_server } --remote=#{ db_server_socket } --remote=db:Open_vSwitch,manager_options --pidfile --detach"  
 end
 
 
@@ -127,6 +120,11 @@ def maybe_kill_vswitch
 end
 
 
+def start_vswitch
+  sh "sudo #{ vswitchd } --log-file=#{ vswitch_log } --pidfile=#{ vswitch_pid } --detach"
+end
+
+
 def vsctl
   File.join objects_dir, "bin", "ovs-vsctl"
 end
@@ -137,45 +135,54 @@ def openvswitch_makefile
 end
 
 
-namespace :build do
-  task :db_server => db_server
-  file db_server => [ openvswitch_makefile ] do
-    Rake::Task[ :openvswitch ].invoke
+file openvswitch_makefile do
+  cd vendor_dir do
+    sh "tar xzvf openvswitch-1.4.0.tar.gz"
   end
+  cd openvswitch_dir do
+    sh "./configure --prefix=#{ objects_dir } --localstatedir=#{ openvswitch_localstate_dir } --sysconfdir=#{ tmp_dir }"
+  end
+end
 
 
-  task :vswitch => vswitchd
-  file vswitchd => [ openvswitch_makefile ] do
-    Rake::Task[ :openvswitch ].invoke
+def build_openvswitch
+  cd openvswitch_dir do
+    sh "make"
+    sh "make install"
   end
+end
+
+
+file db_server => openvswitch_makefile do
+  build_openvswitch  
+end
+
+file vswitchd => openvswitch_makefile do
+  build_openvswitch  
+end
+
+
+def add_switch bridge
+  sh "#{ vsctl } del-br #{ bridge }" rescue nil
+  sh "#{ vsctl } add-br #{ bridge }"
+  sh "#{ vsctl } set bridge #{ bridge } datapath_type=netdev"
 end
 
 
 namespace :run do
   desc "start db server"
-  task :db_server => "build:db_server" do
+  task :db_server => db_server do
     maybe_kill_db_server
-    sh "#{ db_server } --remote=#{ db_server_socket } --remote=db:Open_vSwitch,manager_options --pidfile --detach"
+    start_db_server
   end
 
   desc "start vswitch"
-  task :vswitch => [ "build:vswitch" ] do
+  task :vswitch => vswitchd do
+    Rake::Task[ "run:db_server" ].invoke
     maybe_kill_vswitch
-    sh "sudo #{ vswitchd } --log-file=#{ vswitch_log } --pidfile=#{ vswitch_pid } --detach"
-    sh "#{ vsctl } del-br br0" rescue nil
-    sh "#{ vsctl } del-br br1" rescue nil
-    sh "#{ vsctl } add-br br0"
-    sh "#{ vsctl } add-br br1"
-    sh "#{ vsctl } set bridge br0 datapath_type=netdev"
-    sh "#{ vsctl } set bridge br1 datapath_type=netdev"
-  end
-end
-
-
-namespace :kill do
-  desc "kill db server"
-  task :db_server => "build:db_server" do
-    maybe_kill_db_server
+    start_vswitch
+    add_switch "br0"
+    add_switch "br1"
   end
 end
 
