@@ -222,3 +222,19 @@ end
     end
   end
 end
+
+
+################################################################################
+# NAT
+################################################################################
+
+desc "enable NAT"
+task :nat do
+  sh "sudo ip link add name veth type veths peer name veth"
+  sh "sudo ifconfig veth 192.168.0.254/24"
+  sh "sudo ifconfig veths up"
+  sh "sudo ifconfig veth up"
+  sh "#{ vsctl } add-port br0 veths"
+end
+
+# MEMO: このあと各 VM で "sudo route add default gw 192.168.0.254
