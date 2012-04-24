@@ -178,7 +178,7 @@ end
 
 
 def qcow2 name
-  Dir.glob( File.join( vmdir( name ), "/*.qcow2" ) ).first  
+  Dir.glob( File.join( vm_dir( name ), "/*.qcow2" ) ).first  
 end
 
 
