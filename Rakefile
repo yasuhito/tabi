@@ -189,12 +189,17 @@ def maybe_buildvm name
 end
 
 
+def tap name
+  { :dhcpd => "tap0", :guest => "tap1" }[ name ]
+end
+
+
 def create_run_sh name
   File.open( run_sh( name ), "w" ) do | f |
     f.puts <<-EOF
 #!/bin/sh
 
-exec kvm -m 128 -smp 1 -drive file=#{ qcow2 name } -net nic,macaddr=#{ mac_address name } -net tap,ifname=tap1,script=../../../ovs-ifup,downscript=../../../ovs-ifdown "$@"
+exec kvm -m 128 -smp 1 -drive file=#{ qcow2 name } -net nic,macaddr=#{ mac_address name } -net tap,ifname=#{ tap name },script=../../../ovs-ifup,downscript=../../../ovs-ifdown "$@"
 EOF
   end
   sh "chmod +x #{ run_sh( name ) }"
