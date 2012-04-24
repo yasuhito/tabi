@@ -43,6 +43,7 @@ class MultiLearningSwitch < Controller
 
 
   def packet_in datapath_id, message
+    puts "packet-in (dpid = #{ datapath_id.to_hex })"
     fdb = @fdbs[ datapath_id ]
     fdb.learn message.macsa, message.in_port
     port_no = fdb.port_no_of( message.macda )
@@ -50,7 +51,9 @@ class MultiLearningSwitch < Controller
       flow_mod datapath_id, message, port_no
       packet_out datapath_id, message, port_no
     else
-      flood datapath_id, message
+      @fdbs.keys.each do | each |
+        flood each, message
+      end
     end
   end
 

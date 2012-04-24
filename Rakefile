@@ -291,6 +291,20 @@ task :nat do
   sh "sudo ifconfig veths up"
   sh "sudo ifconfig veth up"
   sh "#{ vsctl } add-port br0 veths"
+  sh "sudo iptables -A FORWARD -i veth -o eth0 -j ACCEPT"
+  sh "sudo iptables -t nat -A POSTROUTING -o eth0 -s 192.168.0.0/24 -j MASQUERADE"
 end
 
 # MEMO: このあと各 VM で "sudo route add default gw 192.168.0.254
+
+
+################################################################################
+# Trema
+################################################################################
+
+namespace :run do
+  desc "run controller"
+  task :trema do
+    sh "../trema/trema run multi-learning-switch.rb -v"
+  end
+end
