@@ -162,10 +162,11 @@ file vswitchd => openvswitch_makefile do
 end
 
 
-def add_switch bridge
+def add_switch bridge, dpid
   sh "#{ vsctl } del-br #{ bridge }" rescue nil
   sh "#{ vsctl } add-br #{ bridge }"
-  sh "#{ vsctl } set bridge #{ bridge } datapath_type=netdev"
+  dpid_long = "%016d" % dpid
+  sh "#{ vsctl } set bridge #{ bridge } datapath_type=netdev other-config:datapath-id=#{ dpid_long }"
 end
 
 
@@ -181,8 +182,8 @@ namespace :run do
     Rake::Task[ "run:db_server" ].invoke
     maybe_kill_vswitch
     start_vswitch
-    add_switch "br0"
-    add_switch "br1"
+    add_switch "br0", 0x1
+    add_switch "br1", 0x2
   end
 end
 
