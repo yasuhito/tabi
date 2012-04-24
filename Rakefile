@@ -200,6 +200,20 @@ namespace :kill do
 end
 
 
+desc "connect switches to controller"
+task :set_controller do
+  sh "#{ vsctl } set-controller br0 tcp:127.0.0.1"
+  sh "#{ vsctl } set-controller br1 tcp:127.0.0.1"
+end
+
+
+desc "disconnect switches from controller"
+task :del_controller do
+  sh "#{ vsctl } del-controller br0"
+  sh "#{ vsctl } del-controller br1"
+end
+
+
 ################################################################################
 # KVM
 ################################################################################
