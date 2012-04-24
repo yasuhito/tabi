@@ -86,12 +86,17 @@ def vswitch_run_dir
 end
 
 
+def vswitch_log_dir
+  File.join tmp_dir, "openvswitch", "log", "openvswitch"
+end
+
+
 def db_server_pid
   File.join vswitch_run_dir, "ovsdb-server.pid"
 end
 
 
-def maybe_restart_db_server
+def maybe_kill_db_server
   if FileTest.exists?( db_server_pid )
     pid = `cat #{ db_server_pid }`.chomp
     sh "kill #{ pid }"
@@ -109,7 +114,12 @@ def vswitch_pid
 end
 
 
-def maybe_restart_vswitch
+def vswitch_log
+  File.join vswitch_log_dir, "ovs-vswitchd.log"
+end
+
+
+def maybe_kill_vswitch
   if FileTest.exists?( vswitch_pid )
     pid = `cat #{ vswitch_pid }`.chomp
     sh "sudo kill #{ pid }"
@@ -142,18 +152,30 @@ end
 
 
 namespace :run do
+  desc "start db server"
   task :db_server => "build:db_server" do
-    maybe_restart_db_server
+    maybe_kill_db_server
     sh "#{ db_server } --remote=#{ db_server_socket } --remote=db:Open_vSwitch,manager_options --pidfile --detach"
   end
 
   desc "start vswitch"
-  task :vswitch => [ "build:vswitch", :db_server ] do
-    maybe_restart_vswitch
-    sh "sudo #{ vswitchd } --log-file --pidfile --detach"
-    sh "#{ vsctl } del-br br0"
+  task :vswitch => [ "build:vswitch" ] do
+    maybe_kill_vswitch
+    sh "sudo #{ vswitchd } --log-file=#{ vswitch_log } --pidfile=#{ vswitch_pid } --detach"
+    sh "#{ vsctl } del-br br0" rescue nil
+    sh "#{ vsctl } del-br br1" rescue nil
     sh "#{ vsctl } add-br br0"
+    sh "#{ vsctl } add-br br1"
     sh "#{ vsctl } set bridge br0 datapath_type=netdev"
+    sh "#{ vsctl } set bridge br1 datapath_type=netdev"
+  end
+end
+
+
+namespace :kill do
+  desc "kill db server"
+  task :db_server => "build:db_server" do
+    maybe_kill_db_server
   end
 end
 
@@ -199,7 +221,7 @@ def create_run_sh name
     f.puts <<-EOF
 #!/bin/sh
 
-exec kvm -m 128 -smp 1 -drive file=#{ qcow2 name } -net nic,macaddr=#{ mac_address name } -net tap,ifname=#{ tap name },script=../../../ovs-ifup,downscript=../../../ovs-ifdown "$@"
+exec kvm -m 128 -smp 1 -drive file=#{ qcow2 name } -net nic,macaddr=#{ mac_address name } -net tap,ifname=#{ tap name },script=../../../ovs-ifup.#{ name },downscript=../../../ovs-ifdown.#{ name } "$@"
 EOF
   end
   sh "chmod +x #{ run_sh( name ) }"
