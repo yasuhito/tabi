@@ -239,11 +239,6 @@ def run_sh name
 end
 
 
-def mac_address name
-  { :dhcpd => "00:11:22:EE:EE:01", :guest => "00:11:22:EE:EE:02" }[ name ]
-end
-
-
 def qcow2 name
   Dir.glob( File.join( vm_dir( name ), "/*.qcow2" ) ).first  
 end
@@ -256,17 +251,12 @@ def maybe_buildvm name
 end
 
 
-def tap name
-  { :dhcpd => "tap0", :guest => "tap1" }[ name ]
-end
-
-
 def create_run_sh name
   File.open( run_sh( name ), "w" ) do | f |
     f.puts <<-EOF
 #!/bin/sh
 
-exec kvm -m 128 -smp 1 -drive file=#{ qcow2 name } -net nic,macaddr=#{ mac_address name } -net tap,ifname=#{ tap name },script=../../../ovs-ifup.#{ name },downscript=../../../ovs-ifdown.#{ name } "$@"
+exec kvm -m 128 -smp 1 -drive file=#{ qcow2 name } -net nic,macaddr=#{ $mac[ name ] } -net tap,ifname=#{ $tap[ name ] },script=../../../ovs-ifup.#{ name },downscript=../../../ovs-ifdown.#{ name } "$@"
 EOF
   end
   sh "chmod +x #{ run_sh( name ) }"
@@ -298,12 +288,12 @@ end
 desc "enable NAT"
 task :nat do
   sh "sudo ip link add name veth type veths peer name veth"
-  sh "sudo ifconfig veth 192.168.0.254/24"
+  sh "sudo ifconfig veth #{ $gateway }/24"
   sh "sudo ifconfig veths up"
   sh "sudo ifconfig veth up"
-  sh "#{ vsctl } add-port br0 veths"
+  sh "#{ vsctl } add-port #{ $switch[ :management ][ :bridge ] } veths"
   sh "sudo iptables -A FORWARD -i veth -o eth0 -j ACCEPT"
-  sh "sudo iptables -t nat -A POSTROUTING -o eth0 -s 192.168.0.0/24 -j MASQUERADE"
+  sh "sudo iptables -t nat -A POSTROUTING -o eth0 -s #{ $network } -j MASQUERADE"
 end
 
 # MEMO: このあと各 VM で "sudo route add default gw 192.168.0.254
