@@ -209,22 +209,6 @@ namespace :kill do
 end
 
 
-desc "connect switches to controller"
-task :set_controller do
-  $switch.each do | name, each |
-    sh "#{ vsctl } set-controller #{ each[ :bridge ] } tcp:127.0.0.1"
-  end
-end
-
-
-desc "disconnect switches from controller"
-task :del_controller do
-  $switch.each do | name, each |
-    sh "#{ vsctl } del-controller #{ each[ :bridge ] }"
-  end
-end
-
-
 ################################################################################
 # KVM
 ################################################################################
@@ -306,6 +290,20 @@ end
 namespace :run do
   desc "run controller"
   task :trema do
-    sh "../trema/trema run tabi.rb -v"
+    sh "../trema/trema run tabi.rb -d"
+    $switch.each do | name, each |
+      sh "#{ vsctl } set-controller #{ each[ :bridge ] } tcp:127.0.0.1"
+    end
+  end
+end
+
+
+namespace :kill do
+  desc "kill controller"
+  task :trema do
+    sh "../trema/trema killall"
+    $switch.each do | name, each |
+      sh "#{ vsctl } del-controller #{ each[ :bridge ] }"
+    end
   end
 end
