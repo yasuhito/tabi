@@ -189,7 +189,7 @@ namespace :run do
     Rake::Task[ "run:db_server" ].invoke
     maybe_kill_vswitch
     start_vswitch
-    $switch.each do | each |
+    $switch.each do | name, each |
       add_switch each[ :bridge ], each[ :dpid ]
     end
   end
@@ -211,7 +211,7 @@ end
 
 desc "connect switches to controller"
 task :set_controller do
-  $switch.each do | each |
+  $switch.each do | name, each |
     sh "#{ vsctl } set-controller #{ each[ :bridge ] } tcp:127.0.0.1"
   end
 end
@@ -219,7 +219,7 @@ end
 
 desc "disconnect switches from controller"
 task :del_controller do
-  $switch.each do | each |
+  $switch.each do | name, each |
     sh "#{ vsctl } del-controller #{ each[ :bridge ] }"
   end
 end

@@ -16,9 +16,6 @@ class ForwardingEntry
 end
 
 
-#
-# A database that keep pairs of MAC address and port number
-#
 class FDB
   def initialize
     @db = {}

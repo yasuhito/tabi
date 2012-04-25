@@ -5,20 +5,19 @@ require "fdb"
 class Tabi < Controller
   def start
     @fdbs = {}
-    $switch.each do | each |
+    $switch.each do | name, each |
       @fdbs[ each[ :dpid ] ] = FDB.new
     end
   end
 
 
   def switch_ready datapath_id
-    info "Switch %#x connected!" % datapath_id
+    info "#{ switch_name datapath_id } switch connected"
   end
 
 
   def packet_in datapath_id, message
     fdb = @fdbs[ datapath_id ]
-    raise "Unknown switch! (datapath=#{ datapath.to_hex })" if fdb.nil?
     fdb.learn message.macsa, message.in_port
     port_no = fdb.port_no_of( message.macda )
     if port_no
@@ -35,6 +34,14 @@ class Tabi < Controller
   ##############################################################################
   private
   ##############################################################################
+
+
+  def switch_name datapath_id
+    $switch.each do | name, attr |
+      return name if attr[ :dpid ] == datapath_id
+    end
+    raise "Switch not found! (dpid = #{ datapath_id.to_hex })"
+  end
 
 
   def flow_mod datapath_id, message, port_no
