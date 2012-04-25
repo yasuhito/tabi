@@ -3,13 +3,8 @@ require "fdb"
 
 
 class Tabi < Controller
-  add_timer_event :age_fdbs, 5, :periodic
-
-
   def start
-    @fdbs = Hash.new do | hash, datapath_id |
-      hash[ datapath_id ] = FDB.new
-    end
+    @fdbs = {}
     $switch.each do | each |
       @fdbs[ each[ :dpid ] ] = FDB.new
     end
@@ -23,6 +18,7 @@ class Tabi < Controller
 
   def packet_in datapath_id, message
     fdb = @fdbs[ datapath_id ]
+    raise "Unknown switch! (datapath=#{ datapath.to_hex })" if fdb.nil?
     fdb.learn message.macsa, message.in_port
     port_no = fdb.port_no_of( message.macda )
     if port_no
@@ -32,13 +28,6 @@ class Tabi < Controller
       @fdbs.keys.each do | each |
         flood each, message
       end
-    end
-  end
-
-
-  def age_fdbs
-    @fdbs.each_value do | each |
-      each.age
     end
   end
 
