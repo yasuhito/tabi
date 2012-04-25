@@ -316,6 +316,6 @@ end
 namespace :run do
   desc "run controller"
   task :trema do
-    sh "../trema/trema run multi-learning-switch.rb -v"
+    sh "../trema/trema run tabi.rb -v"
   end
 end
