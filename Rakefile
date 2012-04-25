@@ -2,6 +2,7 @@
 require "rubygems"
 require "rake"
 require "rake/clean"
+require "config"
 
 
 ################################################################################
@@ -170,6 +171,12 @@ def add_switch bridge, dpid
 end
 
 
+desc "show network config"
+task :show do
+  sh "#{ vsctl } show"
+end
+
+
 namespace :run do
   desc "start db server"
   task :db_server => db_server do
@@ -182,8 +189,9 @@ namespace :run do
     Rake::Task[ "run:db_server" ].invoke
     maybe_kill_vswitch
     start_vswitch
-    add_switch "br0", 0x1
-    add_switch "br1", 0x2
+    $switch.each do | each |
+      add_switch each[ :bridge ], each[ :dpid ]
+    end
   end
 end
 
@@ -203,15 +211,17 @@ end
 
 desc "connect switches to controller"
 task :set_controller do
-  sh "#{ vsctl } set-controller br0 tcp:127.0.0.1"
-  sh "#{ vsctl } set-controller br1 tcp:127.0.0.1"
+  $switch.each do | each |
+    sh "#{ vsctl } set-controller #{ each[ :bridge ] } tcp:127.0.0.1"
+  end
 end
 
 
 desc "disconnect switches from controller"
 task :del_controller do
-  sh "#{ vsctl } del-controller br0"
-  sh "#{ vsctl } del-controller br1"
+  $switch.each do | each |
+    sh "#{ vsctl } del-controller #{ each[ :bridge ] }"
+  end
 end
 
 

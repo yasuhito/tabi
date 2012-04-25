@@ -20,6 +20,7 @@
 #
 
 
+require "config"
 require "fdb"
 
 
@@ -34,6 +35,9 @@ class MultiLearningSwitch < Controller
     @fdbs = Hash.new do | hash, datapath_id |
       hash[ datapath_id ] = FDB.new
     end
+    $switch.each do | each |
+      @fdbs[ each[ :dpid ] ] = FDB.new
+    end
   end
 
 
@@ -43,7 +47,6 @@ class MultiLearningSwitch < Controller
 
 
   def packet_in datapath_id, message
-    puts "packet-in (dpid = #{ datapath_id.to_hex })"
     fdb = @fdbs[ datapath_id ]
     fdb.learn message.macsa, message.in_port
     port_no = fdb.port_no_of( message.macda )
