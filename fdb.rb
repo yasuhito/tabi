@@ -1,7 +1,4 @@
 class ForwardingEntry
-  include Trema::Logger
-
-
   attr_reader :mac
   attr_reader :port_no
   attr_reader :dpid
@@ -11,7 +8,6 @@ class ForwardingEntry
     @mac = mac
     @port_no = port_no
     @dpid = dpid
-    debug "New entry: MAC address = #{ @mac.to_s }, port number = #{ @port_no }"
   end
 end
 
@@ -23,7 +19,7 @@ class FDB
 
 
   def port_no_of mac
-    dest = @db[ mac ]
+    dest = @db[ mac.to_s ]
     if dest
       dest.port_no
     else
@@ -32,19 +28,9 @@ class FDB
   end
 
 
-  def lookup mac
-    if dest = @db[ mac ]
-      [ dest.dpid, dest.port_no ]
-    else
-      nil
-    end
-  end
-
-
   def learn mac, port_no, dpid = nil
-    if @db[ mac ].nil?
-      new_entry = ForwardingEntry.new( mac, port_no, dpid )
-      @db[ new_entry.mac ] = new_entry
+    if @db[ mac.to_s ].nil?
+      @db[ mac.to_s ] = ForwardingEntry.new( mac.to_s, port_no, dpid )
     end
   end
 end

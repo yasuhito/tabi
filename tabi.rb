@@ -19,13 +19,20 @@ class Tabi < Controller
   def packet_in datapath_id, message
     fdb = @fdbs[ datapath_id ]
     fdb.learn message.macsa, message.in_port
-    port_no = fdb.port_no_of( message.macda )
-    if port_no
-      flow_mod datapath_id, message, port_no
-      packet_out datapath_id, message, port_no
+
+    if datapath_id == $switch[ :guest ][ :dpid ] and message.tcp_dst_port == 80
+      if management_vm_port
+        packet_out $switch[ :management ][ :dpid ], message, management_vm_port
+      end
     else
-      @fdbs.keys.each do | each |
-        flood each, message
+      port_no = fdb.port_no_of( message.macda )
+      if port_no
+        flow_mod datapath_id, message, port_no
+        packet_out datapath_id, message, port_no
+      else
+        @fdbs.keys.each do | each |
+          flood each, message
+        end
       end
     end
   end
@@ -34,6 +41,11 @@ class Tabi < Controller
   ##############################################################################
   private
   ##############################################################################
+
+
+  def management_vm_port
+    @fdbs[ $switch[ :management ][ :dpid ] ].port_no_of( $mac[ :dhcpd ] )
+  end
 
 
   def switch_name datapath_id

@@ -7,4 +7,4 @@ $switch = {
 }
 
 $tap = { :dhcpd => "tap0", :guest => "tap1" }
-$mac = { :dhcpd => "00:11:22:EE:EE:01", :guest => "00:11:22:EE:EE:02" }
+$mac = { :dhcpd => "00:11:22:ee:ee:01", :guest => "00:11:22:ee:ee:02" }
