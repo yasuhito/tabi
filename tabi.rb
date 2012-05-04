@@ -5,8 +5,8 @@ require "fdb"
 class Tabi < Controller
   def start
     @fdbs = {}
-    $switch.each do | name, each |
-      @fdbs[ each[ :dpid ] ] = FDB.new
+    $dpid.each do | name, dpid |
+      @fdbs[ dpid ] = FDB.new
     end
   end
 
@@ -20,9 +20,9 @@ class Tabi < Controller
     fdb = @fdbs[ datapath_id ]
     fdb.learn message.macsa, message.in_port
 
-    if datapath_id == $switch[ :guest ][ :dpid ] and message.tcp_dst_port == 80
+    if datapath_id == $dpid[ :guest ] and message.tcp_dst_port == 80
       if management_vm_port
-        packet_out $switch[ :management ][ :dpid ], message, management_vm_port
+        packet_out $dpid[ :management ], message, management_vm_port
       end
     else
       port_no = fdb.port_no_of( message.macda )
@@ -44,13 +44,13 @@ class Tabi < Controller
 
 
   def management_vm_port
-    @fdbs[ $switch[ :management ][ :dpid ] ].port_no_of( $mac[ :dhcpd ] )
+    @fdbs[ $dpid[ :management ] ].port_no_of( $mac[ :dhcpd ] )
   end
 
 
   def switch_name datapath_id
-    $switch.each do | name, attr |
-      return name if attr[ :dpid ] == datapath_id
+    $dpid.each do | name, dpid |
+      return name if dpid == datapath_id
     end
     raise "Switch not found! (dpid = #{ datapath_id.to_hex })"
   end

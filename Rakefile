@@ -189,8 +189,8 @@ namespace :run do
     Rake::Task[ "run:db_server" ].invoke
     maybe_kill_vswitch
     start_vswitch
-    $switch.each do | name, each |
-      add_switch each[ :bridge ], each[ :dpid ]
+    $vm.each do | each |
+      add_switch $bridge[ each ], $dpid[ name ]
     end
   end
 end
@@ -275,7 +275,7 @@ task :nat do
   sh "sudo ifconfig veth #{ $gateway }/24"
   sh "sudo ifconfig veths up"
   sh "sudo ifconfig veth up"
-  sh "#{ vsctl } add-port #{ $switch[ :guest ][ :bridge ] } veths"
+  sh "#{ vsctl } add-port #{ $bridge[ :guest ] } veths"
   sh "sudo iptables -A FORWARD -i veth -o eth0 -j ACCEPT"
   sh "sudo iptables -t nat -A POSTROUTING -o eth0 -s #{ $network } -j MASQUERADE"
 end
@@ -291,8 +291,8 @@ namespace :run do
   desc "run controller"
   task :trema do
     sh "../trema/trema run tabi.rb -d"
-    $switch.each do | name, each |
-      sh "#{ vsctl } set-controller #{ each[ :bridge ] } tcp:127.0.0.1"
+    $vm.each do | each |
+      sh "#{ vsctl } set-controller #{ $bridge[ each ] } tcp:127.0.0.1"
     end
   end
 end
@@ -302,8 +302,8 @@ namespace :kill do
   desc "kill controller"
   task :trema do
     sh "../trema/trema killall"
-    $switch.each do | name, each |
-      sh "#{ vsctl } del-controller #{ each[ :bridge ] }"
+    $vm.each do | each |
+      sh "#{ vsctl } del-controller #{ $bridge[ each ] }"
     end
   end
 end
