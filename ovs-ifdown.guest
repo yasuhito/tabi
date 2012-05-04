@@ -1,5 +1,8 @@
-#!/bin/sh
+#!/usr/bin/env ruby
 
-switch='br1'
-/sbin/ifconfig $1 0.0.0.0 down
-/home/yasuhito/play/hitoritabi/objects/bin/ovs-vsctl del-port ${switch} $1
+$LOAD_PATH.unshift File.dirname( __FILE__ )
+require "config"
+require "rake"
+
+sh "/sbin/ifconfig #{ ARGV[ 0 ] } 0.0.0.0 down"
+sh "#{ $ovs_vsctl } del-port #{ $switch[ File.extname( __FILE__ )[ 1..-1 ].to_sym ][ :bridge ] } #{ ARGV[ 0 ] }"
