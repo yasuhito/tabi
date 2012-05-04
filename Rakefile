@@ -89,7 +89,7 @@ end
 def maybe_kill_db_server
   if FileTest.exists?( db_server_pid )
     pid = `cat #{ db_server_pid }`.chomp
-    sh "kill #{ pid }"
+    sh "kill #{ pid }" rescue nil
   end
 end
 
@@ -117,7 +117,7 @@ end
 def maybe_kill_vswitch
   if FileTest.exists?( vswitch_pid )
     pid = `cat #{ vswitch_pid }`.chomp
-    sh "sudo kill #{ pid }"
+    sh "sudo kill #{ pid }" rescue nil
   end
 end
 
