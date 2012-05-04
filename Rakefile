@@ -240,7 +240,7 @@ def create_run_sh name
     f.puts <<-EOF
 #!/bin/sh
 
-exec kvm -m #{ $memory[ name ] } -smp 1 -drive file=#{ qcow2 name } -net nic,macaddr=#{ $mac[ name ] } -net tap,ifname=#{ $tap[ name ] },script=../../../ovs-ifup.#{ name },downscript=../../../ovs-ifdown.#{ name } "$@"
+exec kvm -m #{ $memory[ name ] } -smp 1 -drive file=#{ qcow2 name } -net nic,macaddr=#{ $mac[ name ] } -net tap,ifname=#{ $tap[ name ] },script=../../../ovs-ifup,downscript=../../../ovs-ifdown "$@"
 EOF
   end
   sh "chmod +x #{ run_sh( name ) }"
