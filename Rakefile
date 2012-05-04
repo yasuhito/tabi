@@ -61,42 +61,25 @@ def openvswitch_localstate_dir
 end
 
 
-def db_server
-  File.join objects_dir, "sbin", "ovsdb-server"
+def vswitch_dir
+  File.join tmp_dir, "openvswitch"
 end
 
-
-def db_server_socket
-  "punix:#{ File.join tmp_dir, "openvswitch", "run", "openvswitch", "db.sock" }"
-end
+directory vswitch_dir
 
 
 def vswitch_run_dir
-  File.join tmp_dir, "openvswitch", "run", "openvswitch"
+  File.join vswitch_dir, "run", "openvswitch"
 end
+
+directory vswitch_run_dir
 
 
 def vswitch_log_dir
-  File.join tmp_dir, "openvswitch", "log", "openvswitch"
+  File.join vswitch_dir, "log", "openvswitch"
 end
 
-
-def db_server_pid
-  File.join vswitch_run_dir, "ovsdb-server.pid"
-end
-
-
-def maybe_kill_db_server
-  if FileTest.exists?( db_server_pid )
-    pid = `cat #{ db_server_pid }`.chomp
-    sh "kill #{ pid }" rescue nil
-  end
-end
-
-
-def start_db_server
-  sh "#{ db_server } --remote=#{ db_server_socket } --remote=db:Open_vSwitch,manager_options --pidfile --detach"  
-end
+directory vswitch_log_dir
 
 
 def vswitchd
@@ -155,10 +138,6 @@ def build_openvswitch
 end
 
 
-file db_server => openvswitch_makefile do
-  build_openvswitch  
-end
-
 file vswitchd => openvswitch_makefile do
   build_openvswitch  
 end
@@ -179,14 +158,8 @@ end
 
 
 namespace :run do
-  desc "(re-)start db server"
-  task :db_server => db_server do
-    maybe_kill_db_server
-    start_db_server
-  end
-
   desc "(re-)start vswitch"
-  task :vswitch => vswitchd do
+  task :vswitch => [ vswitchd, vswitch_log_dir, vswitch_run_dir ] do
     Rake::Task[ "run:db_server" ].invoke
     maybe_kill_vswitch
     start_vswitch
@@ -198,14 +171,77 @@ end
 
 
 namespace :kill do
-  desc "kill db server"
-  task :db_server do
-    maybe_kill_db_server
-  end
-
   desc "kill vswitch"
   task :vswitch do
     maybe_kill_vswitch
+  end
+end
+
+
+################################################################################
+# Open vSwitch DB server
+################################################################################
+
+def db_server
+  File.join objects_dir, "sbin", "ovsdb-server"
+end
+
+
+def db_tool
+  File.join objects_dir, "bin", "ovsdb-tool"
+end
+
+
+def db_server_socket
+  "punix:#{ File.join tmp_dir, "openvswitch", "run", "openvswitch", "db.sock" }"
+end
+
+
+def db_server_pid
+  File.join vswitch_run_dir, "ovsdb-server.pid"
+end
+
+
+def maybe_kill_db_server
+  if FileTest.exists?( db_server_pid )
+    pid = `cat #{ db_server_pid }`.chomp
+    sh "kill #{ pid }" rescue nil
+  end
+end
+
+
+def db
+  File.join vswitch_dir, "conf.db"
+end
+
+file db => [ db_server, vswitch_dir ] do
+  sh "#{ db_tool } create #{ db } #{ File.join objects_dir, "share/openvswitch/vswitch.ovsschema" }"
+end
+
+
+def start_db_server
+  sh "#{ db_server } --remote=#{ db_server_socket } --remote=db:Open_vSwitch,manager_options --pidfile --detach"
+end
+
+
+file db_server => openvswitch_makefile do
+  build_openvswitch
+end
+
+
+namespace :run do
+  desc "(re-)start db server"
+  task :db_server => [ db_server, db, vswitch_log_dir, vswitch_run_dir ] do
+    maybe_kill_db_server
+    start_db_server
+  end
+end
+
+
+namespace :kill do
+  desc "kill db server"
+  task :db_server do
+    maybe_kill_db_server
   end
 end
 
