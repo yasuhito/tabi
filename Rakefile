@@ -189,8 +189,8 @@ namespace :run do
     Rake::Task[ "run:db_server" ].invoke
     maybe_kill_vswitch
     start_vswitch
-    $vm.each do | each |
-      add_switch $bridge[ each ], $dpid[ name ]
+    $switch.each do | name, attr |
+      add_switch attr[ :bridge ], attr[ :dpid ]
     end
   end
 end
@@ -235,29 +235,29 @@ def maybe_buildvm name
 end
 
 
-def create_run_sh name
+def create_run_sh name, attr
   File.open( run_sh( name ), "w" ) do | f |
     f.puts <<-EOF
 #!/bin/sh
 
-exec kvm -m #{ $memory[ name ] } -smp 1 -drive file=#{ qcow2 name } -net nic,macaddr=#{ $mac[ name ] } -net tap,ifname=#{ $tap[ name ] },script=../../../ovs-ifup,downscript=../../../ovs-ifdown "$@"
+exec kvm -m #{ attr[ :memory ] } -smp 1 -drive file=#{ qcow2 name } -net nic,macaddr=#{ attr[ :mac ] } -net tap,ifname=#{ attr[ :tap ] },script=../../../ovs-ifup,downscript=../../../ovs-ifdown "$@"
 EOF
   end
   sh "chmod +x #{ run_sh( name ) }"
 end
 
 
-[ :guest, :management ].each do | each |
-  file run_sh( each ) do | t |
-    maybe_buildvm each
-    create_run_sh each
+$vm.each do | name, attr |
+  file run_sh( name ) do | t |
+    maybe_buildvm name
+    create_run_sh name, attr
   end
 
 
   namespace :run do
-    desc "run #{ each } VM"
-    task each => run_sh( each ) do
-      cd vm_dir( each ) do
+    desc "run #{ name } VM"
+    task name => run_sh( name ) do
+      cd vm_dir( name ) do
         sh "sudo ./run.sh"
       end
     end
@@ -275,7 +275,7 @@ task :nat do
   sh "sudo ifconfig veth #{ $gateway }/24"
   sh "sudo ifconfig veths up"
   sh "sudo ifconfig veth up"
-  sh "#{ vsctl } add-port #{ $bridge[ :guest ] } veths"
+  sh "#{ vsctl } add-port #{ $switch[ :guest ][ :bridge ] } veths"
   sh "sudo iptables -A FORWARD -i veth -o eth0 -j ACCEPT"
   sh "sudo iptables -t nat -A POSTROUTING -o eth0 -s #{ $network } -j MASQUERADE"
 end
@@ -291,8 +291,8 @@ namespace :run do
   desc "run controller"
   task :trema do
     sh "../trema/trema run tabi.rb -d"
-    $vm.each do | each |
-      sh "#{ vsctl } set-controller #{ $bridge[ each ] } tcp:127.0.0.1"
+    $switch.each do | name, attr |
+      sh "#{ vsctl } set-controller #{ attr[ :bridge ] } tcp:127.0.0.1"
     end
   end
 end
@@ -302,8 +302,8 @@ namespace :kill do
   desc "kill controller"
   task :trema do
     sh "../trema/trema killall"
-    $vm.each do | each |
-      sh "#{ vsctl } del-controller #{ $bridge[ each ] }"
+    $switch.each do | name, attr |
+      sh "#{ vsctl } del-controller #{ attr[ :bridge ] }"
     end
   end
 end

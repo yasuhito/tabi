@@ -5,4 +5,9 @@ require "config"
 require "rake"
 
 sh "/sbin/ifconfig #{ ARGV[ 0 ] } 0.0.0.0 down"
-sh "#{ $ovs_vsctl } del-port #{ $bridge[ $tap.invert[ ARGV[ 0 ] ] ] } #{ ARGV[ 0 ] }"
+$vm.each do | name, attr |
+  if attr[ :tap ] == ARGV[ 0 ]
+    sh "#{ $ovs_vsctl } del-port #{ $switch[ name ][ :bridge ] } #{ ARGV[ 0 ] }"
+    exit
+  end
+end
