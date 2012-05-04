@@ -39,6 +39,7 @@ end
 
 
 CLOBBER.include "objects"
+CLOBBER.include "tmp"
 CLOBBER.include openvswitch_dir
 
 
