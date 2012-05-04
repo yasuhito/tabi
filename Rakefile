@@ -247,7 +247,7 @@ EOF
 end
 
 
-[ :guest, :dhcpd ].each do | each |
+[ :guest, :management ].each do | each |
   file run_sh( each ) do | t |
     maybe_buildvm each
     create_run_sh each

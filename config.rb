@@ -5,6 +5,6 @@ $switch = {
   :management => { :bridge => "br0", :dpid => 0x1 },
   :guest => { :bridge => "br1", :dpid => 0x2 }
 }
-$memory = { :dhcpd => 256, :guest => 128 }
-$tap = { :dhcpd => "tap0", :guest => "tap1" }
-$mac = { :dhcpd => "00:11:22:ee:ee:01", :guest => "00:11:22:ee:ee:02" }
+$memory = { :management => 256, :guest => 128 }
+$tap = { :management => "tap0", :guest => "tap1" }
+$mac = { :management => "00:11:22:ee:ee:01", :guest => "00:11:22:ee:ee:02" }
