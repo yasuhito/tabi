@@ -153,7 +153,9 @@ end
 
 desc "show network config"
 task :show do
-  sh "#{ vsctl } show"
+  if FileTest.exists?( db_server_pid )
+    sh "#{ vsctl } show"
+  end
 end
 
 
