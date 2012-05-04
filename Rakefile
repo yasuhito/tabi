@@ -179,13 +179,13 @@ end
 
 
 namespace :run do
-  desc "start db server"
+  desc "(re-)start db server"
   task :db_server => db_server do
     maybe_kill_db_server
     start_db_server
   end
 
-  desc "start vswitch"
+  desc "(re-)start vswitch"
   task :vswitch => vswitchd do
     Rake::Task[ "run:db_server" ].invoke
     maybe_kill_vswitch
