@@ -1,5 +1,8 @@
-#!/bin/sh
+#!/usr/bin/env ruby
 
-switch='br0'
-/sbin/ifconfig $1 0.0.0.0 up
-/home/yasuhito/play/tabi/objects/bin/ovs-vsctl add-port ${switch} $1
+$LOAD_PATH.unshift File.dirname( __FILE__ )
+require "config"
+require "rake"
+
+sh "/sbin/ifconfig #{ ARGV[ 0 ] } 0.0.0.0 up"
+sh "#{ $ovs_vsctl } add-port #{ $switch[ File.extname( __FILE__ )[ 1..-1 ].to_sym ][ :bridge ] } #{ ARGV[ 0 ] }"
