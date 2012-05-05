@@ -160,13 +160,14 @@ end
 
 
 namespace :run do
-  desc "(re-)start vswitch"
+  desc "start vswitch"
   task :vswitch => [ vswitchd, vswitch_log_dir, vswitch_run_dir ] do
     Rake::Task[ "run:db_server" ].invoke
-    maybe_kill_vswitch
-    start_vswitch
-    $switch.each do | name, attr |
-      add_switch attr[ :bridge ], attr[ :dpid ]
+    if not FileTest.exists?( vswitch_pid )
+      start_vswitch
+      $switch.each do | name, attr |
+        add_switch attr[ :bridge ], attr[ :dpid ]
+      end
     end
   end
 end
@@ -328,7 +329,7 @@ end
 
 desc "enable NAT"
 task :nat do
-  sh "sudo ip link add name veth type veths peer name veth"
+  sh "sudo ip link add name veth type veth peer name veths"
   sh "sudo ifconfig veth #{ $gateway }/24"
   sh "sudo ifconfig veths up"
   sh "sudo ifconfig veth up"
