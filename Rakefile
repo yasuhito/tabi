@@ -158,13 +158,13 @@ end
 
 desc "show network config"
 task :show do
-  if FileTest.exists?( db_server_pid )
+  if db_server_running?
     sh "#{ vsctl } show"
   end
 end
 
 
-# MEMO: このあと各 VM で "sudo route add default gw 192.168.0.254
+# MEMO: 各 VM で "sudo route add default gw 192.168.0.254
 def start_nat
   sh "sudo ip link delete veth"
   sh "sudo ip link add name veth type veth peer name veths"
@@ -285,7 +285,7 @@ def vm_dir name
 end
 
 
-def run_sh name
+def runsh name
   File.join vm_dir( name ), "run.sh"
 end
 
@@ -318,15 +318,15 @@ def ovs_ifdown
 end
 
 
-def create_run_sh name, memory, mac, tap
-  File.open( run_sh( name ), "w" ) do | f |
+def generate_runsh name, memory, mac, tap
+  File.open( runsh( name ), "w" ) do | f |
     f.puts <<-EOF
 #!/bin/sh
 
 exec kvm -m #{ memory } -smp 1 -drive file=#{ vm_image name } -net nic,macaddr=#{ mac } -net tap,ifname=#{ tap },script=#{ ovs_ifup },downscript=#{ ovs_ifdown } "$@"
 EOF
   end
-  sh "chmod +x #{ run_sh name }"
+  sh "chmod +x #{ runsh name }"
 end
 
 
@@ -336,15 +336,15 @@ $vm.each do | name, attr |
   end
 
 
-  file run_sh( name ) => vm_image( name ) do
-    create_run_sh name, attr[ :memory ], attr[ :mac ], attr[ :tap ]
+  file runsh( name ) => vm_image( name ) do
+    generate_runsh name, attr[ :memory ], attr[ :mac ], attr[ :tap ]
   end
 
 
   namespace :vm do
     desc "start #{ name } VM"
-    task name => [ run_sh( name ), "run:vswitch" ] do
-      sh "sudo #{ run_sh name }"
+    task name => [ runsh( name ), "run:vswitch" ] do
+      sh "sudo #{ runsh name }"
     end
   end
 end
@@ -354,21 +354,14 @@ end
 # Trema
 ################################################################################
 
-namespace :run do
-  desc "run controller"
-  task :trema do
-    sh "../trema/trema run tabi.rb -d"
-    $switch.each do | name, attr |
-      sh "#{ vsctl } set-controller #{ attr[ :bridge ] } tcp:127.0.0.1"
-    end
+desc "run controller"
+task :trema do
+  $switch.each do | name, attr |
+    sh "#{ vsctl } set-controller #{ attr[ :bridge ] } tcp:127.0.0.1"
   end
-end
-
-
-namespace :kill do
-  desc "kill controller"
-  task :trema do
-    sh "../trema/trema killall"
+  begin
+    sh "../trema/trema run tabi.rb"
+  ensure
     $switch.each do | name, attr |
       sh "#{ vsctl } del-controller #{ attr[ :bridge ] }"
     end
