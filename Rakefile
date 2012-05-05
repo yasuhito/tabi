@@ -92,13 +92,18 @@ def vswitch_pid
 end
 
 
+def vswitch_running?
+  FileTest.exists? vswitch_pid
+end
+
+
 def vswitch_log
   File.join vswitch_log_dir, "ovs-vswitchd.log"
 end
 
 
 def maybe_kill_vswitch
-  if FileTest.exists?( vswitch_pid )
+  if vswitch_running?
     pid = `cat #{ vswitch_pid }`.chomp
     sh "sudo kill #{ pid }" rescue nil
   end
@@ -177,7 +182,7 @@ namespace :run do
   desc "start vswitch"
   task :vswitch => [ vswitchd, vswitch_log_dir, vswitch_run_dir ] do
     Rake::Task[ "run:db_server" ].invoke
-    if not FileTest.exists?( vswitch_pid )
+    if not vswitch_running?
       start_vswitch
       $switch.each do | name, attr |
         add_switch attr[ :bridge ], attr[ :dpid ]
@@ -220,8 +225,13 @@ def db_server_pid
 end
 
 
+def db_server_running?
+  FileTest.exists? db_server_pid
+end
+
+
 def maybe_kill_db_server
-  if FileTest.exists?( db_server_pid )
+  if db_server_running?
     pid = `cat #{ db_server_pid }`.chomp
     sh "kill #{ pid }" rescue nil
   end
@@ -250,7 +260,7 @@ end
 namespace :run do
   desc "start db server"
   task :db_server => [ db_server, db, vswitch_log_dir, vswitch_run_dir ] do
-    if not FileTest.exists?( db_server_pid )
+    if not db_server_running?
       maybe_kill_db_server
       start_db_server
     end
