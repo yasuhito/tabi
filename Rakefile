@@ -159,6 +159,20 @@ task :show do
 end
 
 
+# MEMO: このあと各 VM で "sudo route add default gw 192.168.0.254
+def start_nat
+  sh "sudo ip link delete veth"
+  sh "sudo ip link add name veth type veth peer name veths"
+  sh "sudo ifconfig veth #{ $gateway }/24"
+  sh "sudo ifconfig veths up"
+  sh "sudo ifconfig veth up"
+  sh "#{ vsctl } del-port #{ $switch[ :guest ][ :bridge ] } veths"
+  sh "#{ vsctl } add-port #{ $switch[ :guest ][ :bridge ] } veths"
+  sh "sudo iptables -A FORWARD -i veth -o eth0 -j ACCEPT"
+  sh "sudo iptables -t nat -A POSTROUTING -o eth0 -s #{ $network } -j MASQUERADE"
+end
+
+
 namespace :run do
   desc "start vswitch"
   task :vswitch => [ vswitchd, vswitch_log_dir, vswitch_run_dir ] do
@@ -169,6 +183,7 @@ namespace :run do
         add_switch attr[ :bridge ], attr[ :dpid ]
       end
     end
+    start_nat
   end
 end
 
@@ -233,10 +248,12 @@ end
 
 
 namespace :run do
-  desc "(re-)start db server"
+  desc "start db server"
   task :db_server => [ db_server, db, vswitch_log_dir, vswitch_run_dir ] do
-    maybe_kill_db_server
-    start_db_server
+    if not FileTest.exists?( db_server_pid )
+      maybe_kill_db_server
+      start_db_server
+    end
   end
 end
 
@@ -314,31 +331,13 @@ $vm.each do | name, attr |
   end
 
 
-  namespace :run do
-    desc "run #{ name } VM"
+  namespace :vm do
+    desc "start #{ name } VM"
     task name => [ run_sh( name ), "run:vswitch" ] do
       sh "sudo #{ run_sh name }"
     end
   end
 end
-
-
-################################################################################
-# NAT
-################################################################################
-
-desc "enable NAT"
-task :nat do
-  sh "sudo ip link add name veth type veth peer name veths"
-  sh "sudo ifconfig veth #{ $gateway }/24"
-  sh "sudo ifconfig veths up"
-  sh "sudo ifconfig veth up"
-  sh "#{ vsctl } add-port #{ $switch[ :guest ][ :bridge ] } veths"
-  sh "sudo iptables -A FORWARD -i veth -o eth0 -j ACCEPT"
-  sh "sudo iptables -t nat -A POSTROUTING -o eth0 -s #{ $network } -j MASQUERADE"
-end
-
-# MEMO: このあと各 VM で "sudo route add default gw 192.168.0.254
 
 
 ################################################################################
