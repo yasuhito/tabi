@@ -144,7 +144,7 @@ end
 
 
 file vswitchd => openvswitch_makefile do
-  build_openvswitch  
+  build_openvswitch
 end
 
 
