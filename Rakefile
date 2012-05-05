@@ -253,7 +253,7 @@ end
 ################################################################################
 
 def vm_dir name
-  File.join File.dirname( __FILE__ ), "tmp", "vm", name.to_s
+  File.join tmp_dir, "vm", name.to_s
 end
 
 
@@ -262,8 +262,13 @@ def run_sh name
 end
 
 
+def vm_image name
+  File.join vm_dir( name ), "image.qcow2"
+end
+
+
 def qcow2 name
-  Dir.glob( File.join( vm_dir( name ), "/*.qcow2" ) ).first  
+  Dir.glob( File.join( vm_dir( name ), "/tmp*.qcow2" ) ).first
 end
 
 
@@ -271,34 +276,47 @@ def maybe_buildvm name
   if qcow2( name ).nil?
     sh "sudo vmbuilder kvm ubuntu --suite oneiric -d #{ vm_dir name } --overwrite"
   end
+  mv qcow2( name ), vm_image( name )
 end
 
 
-def create_run_sh name, attr
+def ovs_ifup
+  File.join base_dir, "ovs-ifup"
+end
+
+
+def ovs_ifdown
+  File.join base_dir, "ovs-ifdown"
+end
+
+
+def create_run_sh name, memory, mac, tap
   File.open( run_sh( name ), "w" ) do | f |
     f.puts <<-EOF
 #!/bin/sh
 
-exec kvm -m #{ attr[ :memory ] } -smp 1 -drive file=#{ qcow2 name } -net nic,macaddr=#{ attr[ :mac ] } -net tap,ifname=#{ attr[ :tap ] },script=../../../ovs-ifup,downscript=../../../ovs-ifdown "$@"
+exec kvm -m #{ memory } -smp 1 -drive file=#{ vm_image name } -net nic,macaddr=#{ mac } -net tap,ifname=#{ tap },script=#{ ovs_ifup },downscript=#{ ovs_ifdown } "$@"
 EOF
   end
-  sh "chmod +x #{ run_sh( name ) }"
+  sh "chmod +x #{ run_sh name }"
 end
 
 
 $vm.each do | name, attr |
-  file run_sh( name ) do | t |
+  file vm_image( name ) do
     maybe_buildvm name
-    create_run_sh name, attr
+  end
+
+
+  file run_sh( name ) => vm_image( name ) do
+    create_run_sh name, attr[ :memory ], attr[ :mac ], attr[ :tap ]
   end
 
 
   namespace :run do
     desc "run #{ name } VM"
-    task name => run_sh( name ) do
-      cd vm_dir( name ) do
-        sh "sudo ./run.sh"
-      end
+    task name => [ run_sh( name ), "run:vswitch" ] do
+      sh "sudo #{ run_sh name }"
     end
   end
 end
