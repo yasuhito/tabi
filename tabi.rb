@@ -9,6 +9,12 @@ end
 
 
 class Tabi < Controller
+  SQUID_PORT = 3128
+
+
+  attr_reader :guest_vm_port
+
+
   def switch_ready dpid
     info "#{ switch_name dpid } switch connected"
   end
@@ -16,13 +22,18 @@ class Tabi < Controller
 
   def packet_in dpid, message
     if message.macsa.to_s == $vm[ :guest ][ :mac ]
+      @guest_vm_port ||= message.in_port
       if message.arp? or message.icmpv4?
         flood message
       elsif message.http?
         packet_out_squid message
       end
     else
-      flood message
+      if message.tcp_src_port == SQUID_PORT
+        packet_out_guest message
+      else
+        flood message
+      end
     end
   end
 
@@ -68,7 +79,16 @@ class Tabi < Controller
     send_packet_out(
       dpid_management,
       :packet_in => message,
-      :actions => [ ActionSetTpDst.new( :tp_dst => 3128 ), ActionOutput.new( management_vm_port ) ]
+      :actions => [ ActionSetTpDst.new( :tp_dst => SQUID_PORT ), ActionOutput.new( management_vm_port ) ]
+    )
+  end
+
+
+  def packet_out_guest message
+    send_packet_out(
+      dpid_guest,
+      :packet_in => message,
+      :actions => [ ActionSetTpSrc.new( :tp_src => 80 ), ActionOutput.new( guest_vm_port ) ]
     )
   end
 
