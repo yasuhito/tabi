@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+#
+# [TODO] LOGGING_LEVEL=debug で実行したときに Trema のログとアプリのログ
+#        が混ざって見づらいので、Trema のログだけ別ファイルに保存するように変更
+
 require "config"
 
 
@@ -36,6 +40,7 @@ class Tabi < Controller
       if message.http?
         packet_out_management message
       else
+        # [TODO] ARP と DHCP, DNS は通して、それ以外は通さないように
         flood message
       end
     elsif message.to_guest?
