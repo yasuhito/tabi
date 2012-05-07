@@ -171,7 +171,7 @@ def start_nat
   sh "sudo ifconfig veth #{ $gateway }/24"
   sh "sudo ifconfig veths up"
   sh "sudo ifconfig veth up"
-  sh "#{ vsctl } del-port #{ $switch[ :guest ][ :bridge ] } veths"
+  sh "#{ vsctl } del-port #{ $switch[ :guest ][ :bridge ] } veths" rescue nil
   sh "#{ vsctl } add-port #{ $switch[ :guest ][ :bridge ] } veths"
   sh "sudo iptables -A FORWARD -i veth -o eth0 -j ACCEPT"
   sh "sudo iptables -t nat -A POSTROUTING -o eth0 -s #{ $network } -j MASQUERADE"

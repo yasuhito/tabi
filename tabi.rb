@@ -20,20 +20,16 @@ class Tabi < Controller
     fdb = @fdbs[ datapath_id ]
     fdb.learn message.macsa, message.in_port
 
-    if datapath_id == $switch[ :guest ][ :dpid ] and message.tcp_dst_port == 80
-      if management_vm_port
-        packet_out $switch[ :management ][ :dpid ], message, management_vm_port
-      end
+    case message.macsa.to_s
+    when $vm[ :guest ][ :mac ]
+      handle_guest_packet message
+    when $vm[ :management ][ :mac ]
+      forward message
     else
-      port_no = fdb.port_no_of( message.macda )
-      if port_no
-        flow_mod datapath_id, message, port_no
-        packet_out datapath_id, message, port_no
-      else
-        @fdbs.keys.each do | each |
-          flood each, message
-        end
+      if datapath_id != $switch[ :guest ][ :dpid ]
+        raise "packet-in from unknown dpid!"
       end
+      forward message
     end
   end
 
@@ -41,6 +37,32 @@ class Tabi < Controller
   ##############################################################################
   private
   ##############################################################################
+
+
+  def handle_guest_packet message
+    if message.arp? or message.icmpv4?
+      flood message
+    else
+      if message.tcp_dst_port == 80 or message.tcp_dst_port == 3000
+        info "HTTP from guest VM"
+        if management_vm_port
+          packet_out $switch[ :management ][ :dpid ], message, management_vm_port
+        end
+      end
+    end
+  end
+
+
+  def forward message
+    fdb = @fdbs[ message.datapath_id ]
+    port_no = fdb.port_no_of( message.macda )
+    if port_no
+      flow_mod message.datapath_id, message, port_no
+      packet_out message.datapath_id, message, port_no
+    else
+      flood message
+    end
+  end
 
 
   def management_vm_port
@@ -74,8 +96,10 @@ class Tabi < Controller
   end
 
 
-  def flood datapath_id, message
-    packet_out datapath_id, message, OFPP_FLOOD
+  def flood message
+    @fdbs.keys.each do | each |
+      packet_out each, message, OFPP_FLOOD
+    end
   end
 end
 
