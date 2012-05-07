@@ -3,7 +3,7 @@ require "config"
 
 class Trema::PacketIn
   def http?
-    tcp_dst_port == 80 or tcp_dst_port == 3000
+    tcp_dst_port == 80
   end
 end
 
@@ -19,7 +19,7 @@ class Tabi < Controller
       if message.arp? or message.icmpv4?
         flood message
       elsif message.http?
-        bend_http message
+        packet_out_squid message
       end
     else
       flood message
@@ -55,11 +55,6 @@ class Tabi < Controller
   end
 
 
-  def bend_http message
-    packet_out_squid dpid_management, message, management_vm_port
-  end
-
-
   def packet_out dpid, message, port_no
     send_packet_out(
       dpid,
@@ -69,11 +64,11 @@ class Tabi < Controller
   end
 
 
-  def packet_out_squid dpid, message, port_no
+  def packet_out_squid message
     send_packet_out(
-      dpid,
+      dpid_management,
       :packet_in => message,
-      :actions => [ ActionSetTpDst.new( :tp_dst => 3000 ), ActionOutput.new( port_no ) ]
+      :actions => [ ActionSetTpDst.new( :tp_dst => 3128 ), ActionOutput.new( management_vm_port ) ]
     )
   end
 
