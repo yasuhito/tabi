@@ -2,6 +2,13 @@ require "config"
 require "fdb"
 
 
+class Trema::PacketIn
+  def http?
+    tcp_dst_port == 80 or tcp_dst_port == 3000
+  end
+end
+
+
 class Tabi < Controller
   def start
     @fdbs = {}
@@ -17,22 +24,19 @@ class Tabi < Controller
 
 
   def packet_in datapath_id, message
-    @fdbs[ datapath_id ].learn message.macsa, message.in_port
-
+    learn message
     case message.macsa.to_s
-    when $vm[ :guest ][ :mac ]
+    when mac_guest
       if message.arp? or message.icmpv4?
         flood message
-      else
-        if message.tcp_dst_port == 80 or message.tcp_dst_port == 3000
-          handle_http message
-        end
+      elsif message.http?
+        handle_http message
       end
-    when $vm[ :management ][ :mac ]
+    when mac_management
       forward message
     else
-      if datapath_id != $switch[ :guest ][ :dpid ]
-        raise "packet-in from unknown dpid!"
+      if datapath_id != dpid_guest
+        raise "Packet-in from unknown dpid!"
       end
       forward message
     end
@@ -44,9 +48,34 @@ class Tabi < Controller
   ##############################################################################
 
 
+  def learn message
+    @fdbs[ message.datapath_id ].learn message.macsa, message.in_port
+  end
+
+
+  def mac_guest
+    $vm[ :guest ][ :mac ]
+  end
+
+
+  def mac_management
+    $vm[ :management ][ :mac ]
+  end
+
+
+  def dpid_guest
+    $switch[ :guest ][ :dpid ]
+  end
+
+
+  def dpid_management
+    $switch[ :management ][ :dpid ]
+  end
+
+
   def handle_http message
     if management_vm_port
-      packet_out $switch[ :management ][ :dpid ], message, management_vm_port
+      packet_out dpid_management, message, management_vm_port
     end
   end
 
@@ -64,7 +93,7 @@ class Tabi < Controller
 
 
   def management_vm_port
-    @fdbs[ $switch[ :management ][ :dpid ] ].port_no_of( $vm[ :management ][ :mac ] )
+    @fdbs[ dpid_management ].port_no_of( mac_management )
   end
 
 
