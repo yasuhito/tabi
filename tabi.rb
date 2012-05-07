@@ -1,17 +1,27 @@
+# -*- coding: utf-8 -*-
 require "config"
 
 
+# [TODO] コントローラを eval ではなく普通に load するように Trema 本体を修正
+# ↓こういうのが "module Trema; class PacketIn ... end; end" とも書けるように。
 class Trema::PacketIn
   def http?
     tcp_dst_port == 80
+  end
+
+
+  def from_guest?
+    macsa.to_s == $vm[ :guest ][ :mac ]
+  end
+
+
+  def to_guest?
+    macda.to_s == $vm[ :guest ][ :mac ]
   end
 end
 
 
 class Tabi < Controller
-  SQUID_PORT = 3128
-
-
   attr_reader :guest_vm_port
 
 
@@ -21,19 +31,17 @@ class Tabi < Controller
 
 
   def packet_in dpid, message
-    if message.macsa.to_s == $vm[ :guest ][ :mac ]
+    if message.from_guest?
       @guest_vm_port ||= message.in_port
       if message.http?
-        packet_out_squid message        
+        packet_out_management message
       else
         flood message
       end
+    elsif message.to_guest?
+      packet_out_guest message
     else
-      if message.tcp_src_port == SQUID_PORT
-        packet_out_guest message
-      else
-        flood message
-      end
+      flood message
     end
   end
 
@@ -75,7 +83,8 @@ class Tabi < Controller
   end
 
 
-  def packet_out_squid message
+  def packet_out_management message
+    # [TODO] ActionSetDlDst.new( "00:11:22:33:44:55" ) と書けるように Trema 本体を修正
     send_packet_out(
       dpid_management,
       :packet_in => message,
@@ -91,7 +100,7 @@ class Tabi < Controller
     send_packet_out(
       dpid_guest,
       :packet_in => message,
-      :actions => [ ActionSetTpSrc.new( :tp_src => 80 ), ActionOutput.new( guest_vm_port ) ]
+      :actions => ActionOutput.new( guest_vm_port )
     )
   end
 
