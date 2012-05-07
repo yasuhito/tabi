@@ -17,12 +17,17 @@ class Tabi < Controller
 
 
   def packet_in datapath_id, message
-    fdb = @fdbs[ datapath_id ]
-    fdb.learn message.macsa, message.in_port
+    @fdbs[ datapath_id ].learn message.macsa, message.in_port
 
     case message.macsa.to_s
     when $vm[ :guest ][ :mac ]
-      handle_guest_packet message
+      if message.arp? or message.icmpv4?
+        flood message
+      else
+        if message.tcp_dst_port == 80 or message.tcp_dst_port == 3000
+          handle_http message
+        end
+      end
     when $vm[ :management ][ :mac ]
       forward message
     else
@@ -39,16 +44,9 @@ class Tabi < Controller
   ##############################################################################
 
 
-  def handle_guest_packet message
-    if message.arp? or message.icmpv4?
-      flood message
-    else
-      if message.tcp_dst_port == 80 or message.tcp_dst_port == 3000
-        info "HTTP from guest VM"
-        if management_vm_port
-          packet_out $switch[ :management ][ :dpid ], message, management_vm_port
-        end
-      end
+  def handle_http message
+    if management_vm_port
+      packet_out $switch[ :management ][ :dpid ], message, management_vm_port
     end
   end
 
