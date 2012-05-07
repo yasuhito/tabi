@@ -25,20 +25,14 @@ class Tabi < Controller
 
   def packet_in datapath_id, message
     learn message
-    case message.macsa.to_s
-    when mac_guest
+    if message.macsa.to_s == mac_guest
       if message.arp? or message.icmpv4?
         flood message
       elsif message.http?
         handle_http message
       end
-    when mac_management
-      forward message
     else
-      if datapath_id != dpid_guest
-        raise "Packet-in from unknown dpid!"
-      end
-      forward message
+      flood message
     end
   end
 
@@ -74,20 +68,9 @@ class Tabi < Controller
 
 
   def handle_http message
+    p management_vm_port
     if management_vm_port
-      packet_out dpid_management, message, management_vm_port
-    end
-  end
-
-
-  def forward message
-    fdb = @fdbs[ message.datapath_id ]
-    port_no = fdb.port_no_of( message.macda )
-    if port_no
-      flow_mod message.datapath_id, message, port_no
-      packet_out message.datapath_id, message, port_no
-    else
-      flood message
+      packet_out_squid dpid_management, message, management_vm_port
     end
   end
 
@@ -123,8 +106,18 @@ class Tabi < Controller
   end
 
 
+  def packet_out_squid datapath_id, message, port_no
+    send_packet_out(
+      datapath_id,
+      :packet_in => message,
+      :actions => [ ActionSetTpDst.new( :tp_dst => 3000 ), ActionOutput.new( port_no )
+      ]
+    )
+  end
+
+
   def flood message
-    @fdbs.keys.each do | each |
+    [ dpid_guest, dpid_management ].each do | each |
       packet_out each, message, OFPP_FLOOD
     end
   end
