@@ -23,10 +23,10 @@ class Tabi < Controller
   def packet_in dpid, message
     if message.macsa.to_s == $vm[ :guest ][ :mac ]
       @guest_vm_port ||= message.in_port
-      if message.arp? or message.icmpv4?
+      if message.http?
+        packet_out_squid message        
+      else
         flood message
-      elsif message.http?
-        packet_out_squid message
       end
     else
       if message.tcp_src_port == SQUID_PORT
@@ -79,7 +79,10 @@ class Tabi < Controller
     send_packet_out(
       dpid_management,
       :packet_in => message,
-      :actions => [ ActionSetTpDst.new( :tp_dst => SQUID_PORT ), ActionOutput.new( management_vm_port ) ]
+      :actions => [
+        ActionSetDlDst.new( :dl_dst => Trema::Mac.new( $vm[ :management ][ :mac ] ) ),
+        ActionOutput.new( management_vm_port )
+      ]
     )
   end
 
