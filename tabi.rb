@@ -22,11 +22,13 @@ class Trema::PacketIn
 
 
   # [TODO] management または gw から以外であればゲストから、というふうに判定をマトモにする
+  # [TODO] この判定は Tabi クラス内でやる
   def from_guest?
     macsa.to_s == $vm[ :guest ][ :mac ]
   end
 
 
+  # [TODO] この判定は Tabi クラス内でやる
   def to_guest? user_mac_list
     user_mac_list.include? macda.to_s
   end
