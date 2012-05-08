@@ -1,6 +1,6 @@
 = 一人旅
 
-Describe your project here
+SOHO 用クラウドルータサービス
 
 :include:tabi.rdoc
 

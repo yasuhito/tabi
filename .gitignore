@@ -10,6 +10,7 @@ objects
 pkg
 rdoc
 spec/reports
+tabi.rdoc
 test/tmp
 test/version_tmp
 tmp
