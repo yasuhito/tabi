@@ -21,6 +21,7 @@ class Trema::PacketIn
   end
 
 
+  # [TODO] management または gw から以外であればゲストから、というふうに判定をマトモにする
   def from_guest?
     macsa.to_s == $vm[ :guest ][ :mac ]
   end
