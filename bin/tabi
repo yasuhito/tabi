@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# -*- coding: utf-8 -*-
 # 1.9 adds realpath to resolve symlinks; 1.8 doesn't
 # have this method, so we add it so we get resolved symlinks
 # and compatibility
@@ -10,63 +11,55 @@ unless File.respond_to? :realpath
     end
   end
 end
-$: << File.expand_path(File.dirname(File.realpath(__FILE__)) + '/../lib')
-require 'rubygems'
-require 'gli'
-require 'tabi_version'
+$: << File.expand_path(File.dirname(File.realpath(__FILE__)) + "/../lib")
+require "rubygems"
+require "gli"
+require "tabi_version"
 
 include GLI
 
-program_desc 'Describe your application here'
+program_desc "tabi クラウドルータ管理コマンド"
 
 version Tabi::VERSION
 
-desc 'Describe some switch here'
-switch [:s,:switch]
 
-desc 'Describe some flag here'
-default_value 'the default'
-arg_name 'The name of the argument'
-flag [:f,:flagname]
-
-desc 'Describe pending here'
-arg_name 'Describe arguments to pending here'
-command :pending do |c|
-  c.desc 'Describe a switch to pending'
-  c.switch :s
-
-  c.desc 'Describe a flag to pending'
-  c.default_value 'default'
-  c.flag :f
-  c.action do |global_options,options,args|
-
-    # Your command logic here
-     
+desc "接続許可待ちのユーザを表示"
+long_desc """
+インターネットへの接続許可待ちのユーザ一覧を表示する。
+ユーザは allow コマンドで接続を許可、または deny コマンドで禁止することができる。
+"""
+command :pending do | c |
+  c.action do | global_options, options, args |
     # If you have any errors, just raise them
     # raise "that command made no sense"
+    #
+    # [TODO] 余計な引数が与えられたときのエラー処理
+
+    $LOAD_PATH.unshift File.expand_path( File.join File.dirname( __FILE__ ), ".." )
+    require "config"
+
+    Dir.glob( File.join( pending_dir, "*" ) ).each do | each |
+      puts File.basename( each )
+    end
   end
 end
 
-desc 'Describe allow here'
-arg_name 'Describe arguments to allow here'
+
+desc "ユーザの接続を許可"
+arg_name "Describe arguments to allow here"
 command :allow do |c|
   c.action do |global_options,options,args|
   end
 end
 
-desc 'Describe deny here'
-arg_name 'Describe arguments to deny here'
+
+desc "ユーザの接続を禁止"
+arg_name "Describe arguments to deny here"
 command :deny do |c|
   c.action do |global_options,options,args|
   end
 end
 
-desc 'Describe help here'
-arg_name 'Describe arguments to help here'
-command :help do |c|
-  c.action do |global_options,options,args|
-  end
-end
 
 pre do |global,command,options,args|
   # Pre logic here

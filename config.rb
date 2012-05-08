@@ -19,10 +19,15 @@ $ovs_vsctl = File.join( File.dirname( __FILE__ ), "objects/bin/ovs-vsctl" )
 ################################################################################
 
 def base_dir
-  File.dirname( __FILE__ )
+  File.dirname __FILE__
 end
 
 
 def tmp_dir
   File.join base_dir, "tmp"
+end
+
+
+def pending_dir
+  File.join tmp_dir, "pending"
 end

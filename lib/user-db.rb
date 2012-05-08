@@ -52,9 +52,6 @@ end
 
 
 class UserDB
-  PENDING = File.join( tmp_dir, "pending" )
-
-
   def initialize
     cleanup_db
     @fdb = FDB.new
@@ -83,8 +80,8 @@ class UserDB
 
 
   def cleanup_db
-    FileUtils.rm_rf PENDING
-    FileUtils.mkdir_p PENDING
+    FileUtils.rm_rf pending_dir
+    FileUtils.mkdir_p pending_dir
   end
 
 
@@ -94,7 +91,7 @@ class UserDB
 
 
   def add_to_pending macsa
-    FileUtils.touch File.join( PENDING, macsa.to_s )
+    FileUtils.touch File.join( pending_dir, macsa.to_s )
   end
 end
 
