@@ -11,12 +11,20 @@ unless File.respond_to? :realpath
     end
   end
 end
-$: << File.expand_path(File.dirname(File.realpath(__FILE__)) + "/../lib")
+
+
 require "rubygems"
+
+$LOAD_PATH.unshift File.expand_path( File.join File.dirname( __FILE__ ), "..", "lib" )
+$LOAD_PATH.unshift File.expand_path( File.join File.dirname( __FILE__ ), ".." )
+
+require "config"
 require "gli"
 require "tabi_version"
 
+
 include GLI
+
 
 program_desc "tabi クラウドルータ管理コマンド"
 
@@ -35,9 +43,6 @@ command :pending do | c |
     #
     # [TODO] 余計な引数が与えられたときのエラー処理
 
-    $LOAD_PATH.unshift File.expand_path( File.join File.dirname( __FILE__ ), ".." )
-    require "config"
-
     Dir.glob( File.join( pending_dir, "*" ) ).each do | each |
       puts File.basename( each )
     end
@@ -46,9 +51,24 @@ end
 
 
 desc "ユーザの接続を許可"
-arg_name "Describe arguments to allow here"
-command :allow do |c|
-  c.action do |global_options,options,args|
+long_desc """
+指定したユーザのインターネット接続を許可する。
+"""
+arg_name "user_mac_address ..."
+command :allow do | c |
+  c.action do | global_options, options, args |
+    FileUtils.mkdir_p allow_dir
+
+    if args.empty?
+      Dir.glob( File.join( allow_dir, "*" ) ).each do | each |
+        puts File.basename( each )
+      end
+    else
+      args.each do | each |
+        # [TODO] 指定された MAC アドレスが無かったときのエラー処理
+        FileUtils.mv File.join( pending_dir, each ), allow_dir
+      end
+    end
   end
 end
 

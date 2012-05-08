@@ -31,3 +31,8 @@ end
 def pending_dir
   File.join tmp_dir, "pending"
 end
+
+
+def allow_dir
+  File.join tmp_dir, "allow"
+end
