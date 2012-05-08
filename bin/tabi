@@ -74,9 +74,24 @@ end
 
 
 desc "ユーザの接続を禁止"
-arg_name "Describe arguments to deny here"
-command :deny do |c|
-  c.action do |global_options,options,args|
+long_desc """
+指定したユーザのインターネット接続を禁止する。
+"""
+arg_name "user_mac_address ..."
+command :deny do | c |
+  c.action do | global_options, options, args |
+    FileUtils.mkdir_p deny_dir
+
+    if args.empty?
+      Dir.glob( File.join( deny_dir, "*" ) ).each do | each |
+        puts File.basename( each )
+      end
+    else
+      args.each do | each |
+        # [TODO] 指定された MAC アドレスが無かったときのエラー処理
+        FileUtils.mv File.join( pending_dir, each ), deny_dir
+      end
+    end
   end
 end
 
@@ -101,5 +116,6 @@ on_error do |exception|
   # return false to skip default error handling
   true
 end
+
 
 exit GLI.run(ARGV)

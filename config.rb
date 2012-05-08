@@ -36,3 +36,8 @@ end
 def allow_dir
   File.join tmp_dir, "allow"
 end
+
+
+def deny_dir
+  File.join tmp_dir, "deny"
+end
