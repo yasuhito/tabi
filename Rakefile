@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+$LOAD_PATH.unshift File.expand_path( File.dirname( __FILE__ ) )
+
 require "rubygems"
 require "config"
 require "rake"
@@ -11,18 +13,8 @@ require "rubygems/package_task"
 # Paths
 ################################################################################
 
-def base_dir
-  File.dirname( __FILE__ )
-end
-
-
 def objects_dir
   File.join base_dir, "objects"
-end
-
-
-def tmp_dir
-  File.join base_dir, "tmp"
 end
 
 

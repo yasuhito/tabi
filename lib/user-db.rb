@@ -2,6 +2,7 @@
 $LOAD_PATH.unshift File.expand_path( File.join File.dirname( __FILE__ ), ".." )
 
 require "config"
+require "fileutils"
 
 
 class ForwardingEntry
@@ -42,11 +43,20 @@ class FDB
       @db[ mac.to_s ] = ForwardingEntry.new( mac.to_s, port_no, dpid )
     end
   end
+
+
+  def lookup mac
+    @db[ mac.to_s ]
+  end
 end
 
 
 class UserDB
+  PENDING = File.join( tmp_dir, "pending" )
+
+
   def initialize
+    cleanup_db
     @fdb = FDB.new
   end
 
@@ -62,8 +72,29 @@ class UserDB
 
 
   def learn message
-    # [TODO] 新しいユーザだったらファイルに書き出す
+    add_to_pending message.macsa if new_user?( message )
     @fdb.learn message.macsa, message.in_port
+  end
+
+
+  ##############################################################################
+  private
+  ##############################################################################
+
+
+  def cleanup_db
+    FileUtils.rm_rf PENDING
+    FileUtils.mkdir_p PENDING
+  end
+
+
+  def new_user? message
+    @fdb.lookup( message.macsa ).nil?
+  end
+
+
+  def add_to_pending macsa
+    FileUtils.touch File.join( PENDING, macsa.to_s )
   end
 end
 

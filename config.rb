@@ -12,3 +12,17 @@ $switch = {
 }
 
 $ovs_vsctl = File.join( File.dirname( __FILE__ ), "objects/bin/ovs-vsctl" )
+
+
+################################################################################
+# Paths
+################################################################################
+
+def base_dir
+  File.dirname( __FILE__ )
+end
+
+
+def tmp_dir
+  File.join base_dir, "tmp"
+end
