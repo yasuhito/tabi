@@ -1,0 +1,6 @@
+= 一人旅
+
+Describe your project here
+
+:include:tabi.rdoc
+

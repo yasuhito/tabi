@@ -4,6 +4,7 @@
 .config
 InstalledFiles
 coverage
+html
 lib/bundler/man
 objects
 pkg
