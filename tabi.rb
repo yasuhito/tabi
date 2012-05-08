@@ -6,7 +6,7 @@
 $LOAD_PATH.unshift File.expand_path( File.join File.dirname( __FILE__ ), "lib" )
 
 require "config"
-require "fdb"
+require "user-db"
 
 
 # [TODO] コントローラを eval ではなく普通に load するように Trema 本体を修正
@@ -26,18 +26,15 @@ class Trema::PacketIn
   end
 
 
-  def to_guest?
-    macda.to_s == $vm[ :guest ][ :mac ]
+  def to_guest? user_mac_list
+    user_mac_list.include? macda.to_s
   end
 end
 
 
 class Tabi < Controller
-  attr_reader :guest_vm_port
-
-
   def start
-    @fdb = FdbSet.new
+    @user_db = UserDB.new
   end
 
 
@@ -47,16 +44,15 @@ class Tabi < Controller
 
 
   def packet_in dpid, message
-    learn message
     if message.from_guest?
-      @guest_vm_port ||= message.in_port
+      @user_db.learn message
       if message.http?
         packet_out_management message
       else
         # [TODO] ARP と DHCP, DNS は通して、それ以外は通さないように
         flood message
       end
-    elsif message.to_guest?
+    elsif message.to_guest? @user_db.mac_list
       packet_out_guest message
     else
       flood message
@@ -67,11 +63,6 @@ class Tabi < Controller
   ##############################################################################
   private
   ##############################################################################
-
-
-  def learn message
-    @fdb.learn message.dpid, message.macsa, message.in_port
-  end
 
 
   def switch_name dpid
@@ -123,7 +114,7 @@ class Tabi < Controller
     send_packet_out(
       dpid_guest,
       :packet_in => message,
-      :actions => ActionOutput.new( guest_vm_port )
+      :actions => ActionOutput.new( @user_db.dest_port_of( message ) )
     )
   end
 

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 $LOAD_PATH.unshift File.expand_path( File.join File.dirname( __FILE__ ), ".." )
 
 require "config"
@@ -18,6 +19,9 @@ end
 
 
 class FDB
+  attr_reader :db
+
+
   def initialize
     @db = {}
   end
@@ -41,17 +45,25 @@ class FDB
 end
 
 
-class FdbSet
+class UserDB
   def initialize
-    @fdbs = {}
-    $switch.each do | name, attr |
-      @fdbs[ attr[ :dpid ] ] = FDB.new
-    end
+    @fdb = FDB.new
   end
 
 
-  def learn dpid, macsa, port
-    @fdbs[ dpid ].learn macsa, port
+  def dest_port_of message
+    @fdb.port_no_of message.macda
+  end
+
+
+  def mac_list
+    @fdb.db.keys
+  end
+
+
+  def learn message
+    # [TODO] 新しいユーザだったらファイルに書き出す
+    @fdb.learn message.macsa, message.in_port
   end
 end
 
