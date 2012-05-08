@@ -3,12 +3,19 @@
 # [TODO] LOGGING_LEVEL=debug で実行したときに Trema のログとアプリのログ
 #        が混ざって見づらいので、Trema のログだけ別ファイルに保存するように変更
 
+$LOAD_PATH.unshift File.expand_path( File.join File.dirname( __FILE__ ), "lib" )
+
 require "config"
+require "fdb"
 
 
 # [TODO] コントローラを eval ではなく普通に load するように Trema 本体を修正
 # ↓こういうのが "module Trema; class PacketIn ... end; end" とも書けるように。
 class Trema::PacketIn
+  # [TODO] このエイリアスを Trema 本体に追加
+  alias :dpid :datapath_id
+
+
   def http?
     tcp_dst_port == 80
   end
@@ -29,12 +36,18 @@ class Tabi < Controller
   attr_reader :guest_vm_port
 
 
+  def start
+    @fdb = FdbSet.new
+  end
+
+
   def switch_ready dpid
     info "#{ switch_name dpid } switch connected"
   end
 
 
   def packet_in dpid, message
+    learn message
     if message.from_guest?
       @guest_vm_port ||= message.in_port
       if message.http?
@@ -54,6 +67,11 @@ class Tabi < Controller
   ##############################################################################
   private
   ##############################################################################
+
+
+  def learn message
+    @fdb.learn message.dpid, message.macsa, message.in_port
+  end
 
 
   def switch_name dpid
