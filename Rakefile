@@ -417,7 +417,7 @@ default-lease-time 600;
 max-lease-time 7200;
 
 subnet 192.168.0.0 netmask 255.255.255.0 {
-  option routers #{ $gatway };
+  option routers #{ $gateway };
   host guest {
     hardware ethernet #{ $vm[ :guest ][ :mac ]};
     fixed-address #{ $vm[ :guest ][ :ip ] };
