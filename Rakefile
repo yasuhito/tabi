@@ -409,7 +409,7 @@ namespace :init do
 
     sh "sudo apt-get install isc-dhcp-server"
     tmp_dhcpd_conf = File.join( tmp_dir, "dhcpd.conf" )
-    File.open( tmp_dhcpd_conf ) do | file |
+    File.open( tmp_dhcpd_conf, "w" ) do | file |
       file.puts <<-EOF
 option domain-name-servers 8.8.8.8;
 
