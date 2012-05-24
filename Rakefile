@@ -160,7 +160,7 @@ end
 
 # MEMO: 各 VM で "sudo route add default gw 192.168.0.254
 def start_nat
-  sh "sudo ip link delete veth"
+  sh "sudo ip link delete veth" rescue nil
   sh "sudo ip link add name veth type veth peer name veths"
   sh "sudo ifconfig veth #{ $gateway }/24"
   sh "sudo ifconfig veths up"
