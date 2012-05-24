@@ -441,7 +441,7 @@ def setup_transparent_proxy
     file.puts <<-EOF
 acl all src all
 acl localhost src 127.0.0.1/32
-acl localnet src 192.168.0.0/24
+acl localnet src #{ $network }
 
 acl SSL_ports port 443
 acl Safe_ports port 80
@@ -452,7 +452,7 @@ http_access allow localhost
 http_access deny all
 icp_access deny all
 
-http_port 3128 transparent
+http_port #{ $proxy_port } transparent
 always_direct allow all
 
 acl CONNECT method CONNECT
