@@ -395,3 +395,16 @@ Rake::TestTask.new do |t|
 end
 
 task :default => :test
+
+
+################################################################################
+# VM setup
+################################################################################
+
+namespace :init do
+  desc "initialize management VM environment"
+  task :management do
+    sh "sudo ifconfig eth0 #{ $vm[ :management ][ :ip ] }/24"
+    sh "sudo route add default gw #{ $gateway }"
+  end
+end
