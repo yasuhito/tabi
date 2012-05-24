@@ -436,6 +436,12 @@ end
 
 def setup_transparent_proxy
   sh "sudo apt-get install squid"
+
+  # [TODO] スクリプト置き場を決めてそれ用のメソッド作る
+  # [TODO] squid 設定ディレクトリも変数か定数にする
+  sh "sudo cp ./script/redirector.rb /etc/squid/"
+  sh "sudo chmod +x /etc/squid/redirector.rb"
+  
   tmp_squid_conf = File.join( tmp_dir, "squid.conf" )
   File.open( tmp_squid_conf, "w" ) do | file |
     file.puts <<-EOF
@@ -453,6 +459,7 @@ http_access deny all
 icp_access deny all
 
 http_port #{ $proxy_port } transparent
+url_rewrite_program /etc/squid/redirector.rb
 always_direct allow all
 
 acl CONNECT method CONNECT
