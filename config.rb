@@ -3,7 +3,7 @@ $gateway = "192.168.0.254"
 
 $vm = {
   :management => { :mac => "00:11:22:ee:ee:01", :memory => 256, :tap => "tap0", :ip => "192.168.0.1" },
-  :guest => { :mac => "00:11:22:ee:ee:02", :memory => 128, :tap => "tap1" }
+  :guest => { :mac => "00:11:22:ee:ee:02", :memory => 128, :tap => "tap1", :ip => "192.168.0.2" }
 }
 
 $switch = {

@@ -405,6 +405,27 @@ namespace :init do
   desc "initialize management VM environment"
   task :management do
     sh "sudo ifconfig eth0 #{ $vm[ :management ][ :ip ] }/24"
-    sh "sudo route add default gw #{ $gateway }"
+    sh "sudo route add default gw #{ $gateway }" rescue nil
+
+    sh "sudo apt-get install isc-dhcp-server"
+    tmp_dhcpd_conf = File.join( tmp_dir, "dhcpd.conf" )
+    File.open( tmp_dhcpd_conf ) do | file |
+      file.puts <<-EOF
+option domain-name-servers 8.8.8.8;
+
+default-lease-time 600;
+max-lease-time 7200;
+
+subnet 192.168.0.0 netmask 255.255.255.0 {
+  option routers #{ $gatway };
+  host guest {
+    hardware ethernet #{ $vm[ :guest ][ :mac ]};
+    fixed-address #{ $vm[ :guest ][ :ip ] };
+  }
+}
+EOF
+    end
+    sh "sudo cp #{ tmp_dhcpd_conf } /etc/dhcp/"
+    sh "sudo /etc/init.d/isc-dhcp-server restart"
   end
 end
