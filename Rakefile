@@ -436,6 +436,33 @@ end
 
 def setup_transparent_proxy
   sh "sudo apt-get install squid"
+  tmp_squid_conf = File.join( tmp_dir, "squid.conf" )
+  File.open( tmp_squid_conf, "w" ) do | file |
+    file.puts <<-EOF
+acl all src all
+acl localhost src 127.0.0.1/32
+acl localnet src 192.168.0.0/24
+
+acl SSL_ports port 443
+acl Safe_ports port 80
+acl Safe_ports port 443
+
+http_access allow localnet
+http_access allow localhost
+http_access deny all
+icp_access deny all
+
+http_port 3128 transparent
+always_direct allow all
+
+acl CONNECT method CONNECT
+access_log /var/log/squid/access.log squid
+hosts_file /etc/hosts
+coredump_dir /var/spool/squid
+EOF
+  end
+  sh "sudo cp #{ tmp_squid_conf } /etc/squid/"
+  sh "sudo service squid restart"
   sh "sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 80 -j REDIRECT --to-port #{ $proxy_port }"
 end
 
