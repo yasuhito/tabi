@@ -18,6 +18,11 @@ def objects_dir
 end
 
 
+def script_dir
+  File.join base_dir, "script"
+end
+
+
 def vendor_dir
   File.join base_dir, "vendor"
 end
@@ -303,12 +308,12 @@ end
 
 
 def ovs_ifup
-  File.join base_dir, "ovs-ifup"
+  File.join script_dir, "ovs-ifup"
 end
 
 
 def ovs_ifdown
-  File.join base_dir, "ovs-ifdown"
+  File.join script_dir, "ovs-ifdown"
 end
 
 
@@ -437,9 +442,8 @@ end
 def setup_transparent_proxy
   sh "sudo apt-get install squid"
 
-  # [TODO] スクリプト置き場を決めてそれ用のメソッド作る
   # [TODO] squid 設定ディレクトリも変数か定数にする
-  sh "sudo cp ./script/redirector.rb /etc/squid/"
+  sh "sudo cp #{ File.join script_dir, "redirector.rb" } /etc/squid/"
   sh "sudo chmod +x /etc/squid/redirector.rb"
   
   tmp_squid_conf = File.join( tmp_dir, "squid.conf" )
