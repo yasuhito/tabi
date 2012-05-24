@@ -1,3 +1,6 @@
+require "fileutils"
+
+
 $network = "192.168.0.0/24"
 $gateway = "192.168.0.254"
 
@@ -24,7 +27,9 @@ end
 
 
 def tmp_dir
-  File.join base_dir, "tmp"
+  path = File.join( base_dir, "tmp" )
+  FileUtils.mkdir_p path if not File.directory?( path )
+  path
 end
 
 
