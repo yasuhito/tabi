@@ -401,16 +401,20 @@ task :default => :test
 # VM setup
 ################################################################################
 
-namespace :init do
-  desc "initialize management VM environment"
-  task :management do
-    sh "sudo ifconfig eth0 #{ $vm[ :management ][ :ip ] }/24"
-    sh "sudo route add default gw #{ $gateway }" rescue nil
 
-    sh "sudo apt-get install isc-dhcp-server"
-    tmp_dhcpd_conf = File.join( tmp_dir, "dhcpd.conf" )
-    File.open( tmp_dhcpd_conf, "w" ) do | file |
-      file.puts <<-EOF
+def setup_network
+  sh "sudo ifconfig eth0 #{ $vm[ :management ][ :ip ] }/24"
+  sh "sudo route add default gw #{ $gateway }" rescue nil
+end
+
+
+# [TODO] subnet と netmask がハードコードされているのを直す
+# [TODO] 複数クライアントに対応
+def setup_dhcpd
+  sh "sudo apt-get install isc-dhcp-server"
+  tmp_dhcpd_conf = File.join( tmp_dir, "dhcpd.conf" )
+  File.open( tmp_dhcpd_conf, "w" ) do | file |
+    file.puts <<-EOF
 option domain-name-servers 8.8.8.8;
 
 default-lease-time 600;
@@ -424,8 +428,23 @@ subnet 192.168.0.0 netmask 255.255.255.0 {
   }
 }
 EOF
-    end
-    sh "sudo cp #{ tmp_dhcpd_conf } /etc/dhcp/"
-    sh "sudo /etc/init.d/isc-dhcp-server restart"
+  end
+  sh "sudo cp #{ tmp_dhcpd_conf } /etc/dhcp/"
+  sh "sudo /etc/init.d/isc-dhcp-server restart"
+end
+
+
+def setup_transparent_proxy
+  sh "sudo apt-get install squid"
+  sh "sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 80 -j REDIRECT --to-port #{ $proxy_port }"
+end
+
+
+namespace :init do
+  desc "initialize management VM environment"
+  task :management do
+    setup_network
+    setup_dhcpd
+    setup_transparent_proxy
   end
 end

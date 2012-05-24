@@ -3,6 +3,7 @@ require "fileutils"
 
 $network = "192.168.0.0/24"
 $gateway = "192.168.0.254"
+$proxy_port = 3128
 
 $vm = {
   :management => { :mac => "00:11:22:ee:ee:01", :memory => 256, :tap => "tap0", :ip => "192.168.0.1" },
