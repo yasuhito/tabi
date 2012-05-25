@@ -501,7 +501,6 @@ COMMIT
 EOF
   end
   sh "sudo cp #{ tmp_iptables_rules } /etc/"
-  sh "sudo service squid restart"
 
   tmp_iptables_start = File.join( tmp_dir, "iptables_start" )
   File.open( tmp_iptables_start, "w" ) do | file |
