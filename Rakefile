@@ -408,8 +408,21 @@ task :default => :test
 
 
 def setup_network
-  sh "sudo ifconfig eth0 #{ $vm[ :management ][ :ip ] }/24"
-  sh "sudo route add default gw #{ $gateway }" rescue nil
+  tmp_interfaces = File.join( tmp_dir, "interfaces" )
+  File.open( tmp_interfaces, "w" ) do | file |
+    file.puts <<-EOF
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet static
+  address #{ $vm[ :management ][ :ip ] }
+  netmask 255.255.255.0
+  gateway #{ $gateway }
+EOF
+  end
+  sh "sudo cp #{ tmp_interfaces } /etc/network/"
+  sh "sudo /etc/init.d/networking restart"
 end
 
 
@@ -445,7 +458,7 @@ def setup_transparent_proxy
   # [TODO] squid 設定ディレクトリも変数か定数にする
   sh "sudo cp #{ File.join script_dir, "redirector.rb" } /etc/squid/"
   sh "sudo chmod +x /etc/squid/redirector.rb"
-  
+
   tmp_squid_conf = File.join( tmp_dir, "squid.conf" )
   File.open( tmp_squid_conf, "w" ) do | file |
     file.puts <<-EOF
