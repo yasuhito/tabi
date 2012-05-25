@@ -359,7 +359,9 @@ task :trema do
     sh "#{ vsctl } set-controller #{ attr[ :bridge ] } tcp:127.0.0.1"
   end
   begin
-    sh "../trema/trema run tabi.rb"
+    # [TODO] trema の場所を config.rb に書かせる
+    # [TODO] tabi.rb の場所を script_dir から取る
+    sh "../trema/trema run ./script/tabi.rb"
   ensure
     $switch.each do | name, attr |
       sh "#{ vsctl } del-controller #{ attr[ :bridge ] }"
