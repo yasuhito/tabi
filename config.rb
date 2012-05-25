@@ -47,3 +47,8 @@ end
 def deny_dir
   File.join tmp_dir, "deny"
 end
+
+
+def trema
+  File.join base_dir, "..", "trema", "trema"
+end
