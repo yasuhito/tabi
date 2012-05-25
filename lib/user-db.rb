@@ -5,6 +5,11 @@ require "config"
 require "fileutils"
 
 
+dir :pending_dir, tmp_dir, "pending"
+dir :allow_dir, tmp_dir, "allow"
+dir :deny_dir, tmp_dir, "deny"
+
+
 class ForwardingEntry
   attr_reader :mac
   attr_reader :port_no

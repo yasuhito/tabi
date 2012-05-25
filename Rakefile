@@ -10,35 +10,11 @@ require "rubygems/package_task"
 
 
 ################################################################################
-# Paths
-################################################################################
-
-def objects_dir
-  File.join base_dir, "objects"
-end
-
-
-def script_dir
-  File.join base_dir, "script"
-end
-
-
-def vendor_dir
-  File.join base_dir, "vendor"
-end
-
-
-################################################################################
 # clean and clobber
 ################################################################################
 
-def openvswitch_dir
-  File.join vendor_dir, "openvswitch-1.4.0"
-end
-
-
-CLOBBER.include "objects"
-CLOBBER.include "tmp"
+CLOBBER.include object_dir
+CLOBBER.include tmp_dir
 CLOBBER.include openvswitch_dir
 
 
@@ -55,34 +31,14 @@ end
 # Open vSwitch
 ################################################################################
 
-def openvswitch_localstate_dir
-  File.join tmp_dir, "openvswitch"
-end
-
-
-def vswitch_dir
-  File.join tmp_dir, "openvswitch"
-end
-
+# [TODO] これ書かなくてもいいようにする
 directory vswitch_dir
-
-
-def vswitch_run_dir
-  File.join vswitch_dir, "run", "openvswitch"
-end
-
 directory vswitch_run_dir
-
-
-def vswitch_log_dir
-  File.join vswitch_dir, "log", "openvswitch"
-end
-
 directory vswitch_log_dir
 
 
 def vswitchd
-  File.join objects_dir, "sbin", "ovs-vswitchd"
+  File.join object_dir, "sbin", "ovs-vswitchd"
 end
 
 
@@ -114,11 +70,6 @@ def start_vswitch
 end
 
 
-def vsctl
-  File.join objects_dir, "bin", "ovs-vsctl"
-end
-
-
 def openvswitch_makefile
   File.join openvswitch_dir, "Makefile"
 end
@@ -129,7 +80,7 @@ file openvswitch_makefile do
     sh "tar xzvf openvswitch-1.4.0.tar.gz"
   end
   cd openvswitch_dir do
-    sh "./configure --prefix=#{ objects_dir } --localstatedir=#{ openvswitch_localstate_dir } --sysconfdir=#{ tmp_dir }"
+    sh "./configure --prefix=#{ object_dir } --localstatedir=#{ vswitch_dir } --sysconfdir=#{ tmp_dir }"
   end
 end
 
@@ -205,12 +156,12 @@ end
 ################################################################################
 
 def db_server
-  File.join objects_dir, "sbin", "ovsdb-server"
+  File.join object_dir, "sbin", "ovsdb-server"
 end
 
 
 def db_tool
-  File.join objects_dir, "bin", "ovsdb-tool"
+  File.join object_dir, "bin", "ovsdb-tool"
 end
 
 
@@ -242,7 +193,7 @@ def db
 end
 
 file db => [ db_server, vswitch_dir ] do
-  sh "#{ db_tool } create #{ db } #{ File.join objects_dir, "share/openvswitch/vswitch.ovsschema" }"
+  sh "#{ db_tool } create #{ db } #{ File.join object_dir, "share/openvswitch/vswitch.ovsschema" }"
 end
 
 
@@ -353,6 +304,7 @@ end
 # Trema
 ################################################################################
 
+# [TODO] vswitch が動いてない状態でいきなり rake trema しても動くように
 desc "run controller"
 task :trema do
   $switch.each do | name, attr |
