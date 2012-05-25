@@ -487,7 +487,32 @@ EOF
   end
   sh "sudo cp #{ tmp_squid_conf } /etc/squid/"
   sh "sudo service squid restart"
-  sh "sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 80 -j REDIRECT --to-port #{ $proxy_port }"
+
+  tmp_iptables_rules = File.join( tmp_dir, "iptables.rules" )
+  File.open( tmp_iptables_rules, "w" ) do | file |
+    file.puts <<-EOF
+*nat
+:PREROUTING ACCEPT [0:0]
+:INPUT ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+:POSTROUTING ACCEPT [0:0]
+-A PREROUTING -i eth0 -p tcp -m tcp --dport 80 -j REDIRECT --to-ports 3128
+COMMIT
+EOF
+  end
+  sh "sudo cp #{ tmp_iptables_rules } /etc/"
+  sh "sudo service squid restart"
+
+  tmp_iptables_start = File.join( tmp_dir, "iptables_start" )
+  File.open( tmp_iptables_start, "w" ) do | file |
+    file.puts <<-EOF
+#!/bin/sh
+/sbin/iptables-restore < /etc/iptables/rules
+exit 0
+EOF
+  end
+  sh "sudo cp #{ tmp_iptables_start } /etc/network/if-pre-up.d/"
+  sh "sudo chmod a+x /etc/network/if-pre-up.d/iptables_start"
 end
 
 
