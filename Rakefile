@@ -360,8 +360,7 @@ task :trema do
   end
   begin
     # [TODO] trema の場所を config.rb に書かせる
-    # [TODO] tabi.rb の場所を script_dir から取る
-    sh "../trema/trema run ./script/tabi.rb"
+    sh "../trema/trema run #{ File.join script_dir, "tabi.rb" }"
   ensure
     $switch.each do | name, attr |
       sh "#{ vsctl } del-controller #{ attr[ :bridge ] }"
