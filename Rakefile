@@ -506,7 +506,7 @@ EOF
   File.open( tmp_iptables_start, "w" ) do | file |
     file.puts <<-EOF
 #!/bin/sh
-/sbin/iptables-restore < /etc/iptables/rules
+/sbin/iptables-restore < /etc/iptables.rules
 exit 0
 EOF
   end
