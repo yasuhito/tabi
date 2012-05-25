@@ -1,5 +1,36 @@
+# -*- coding: utf-8 -*-
 require "fileutils"
 
+
+################################################################################
+# !!! ここは編集しない !!!
+################################################################################
+
+def base_dir
+  File.dirname __FILE__
+end
+
+
+def dir name, *names
+  path = File.join( base_dir, *names )
+  Kernel.send( :define_method, name ) do
+    FileUtils.mkdir_p path if not File.directory?( path )
+    path
+  end
+end
+
+
+def command name, *names
+  path = File.expand_path( File.join base_dir, *names )
+  Kernel.send( :define_method, name ) do
+    path
+  end
+end
+
+
+################################################################################
+# ここから設定
+################################################################################
 
 $network = "192.168.0.0/24"
 $gateway = "192.168.0.254"
@@ -23,33 +54,9 @@ $ovs_vsctl = File.join( File.dirname( __FILE__ ), "objects/bin/ovs-vsctl" )
 # Paths
 ################################################################################
 
-def base_dir
-  File.dirname __FILE__
-end
+dir :tmp_dir, "tmp"
+dir :pending_dir, tmp_dir, "pending"
+dir :allow_dir, tmp_dir, "allow"
+dir :deny_dir, tmp_dir, "deny"
 
-
-def tmp_dir
-  path = File.join( base_dir, "tmp" )
-  FileUtils.mkdir_p path if not File.directory?( path )
-  path
-end
-
-
-def pending_dir
-  File.join tmp_dir, "pending"
-end
-
-
-def allow_dir
-  File.join tmp_dir, "allow"
-end
-
-
-def deny_dir
-  File.join tmp_dir, "deny"
-end
-
-
-def trema
-  File.join base_dir, "..", "trema", "trema"
-end
+command :trema, "..", "trema", "trema"

@@ -81,7 +81,6 @@ class UserDB
 
   def cleanup_db
     FileUtils.rm_rf pending_dir
-    FileUtils.mkdir_p pending_dir
   end
 
 
