@@ -3,6 +3,7 @@ require "fileutils"
 
 $network = "192.168.0.0/24"
 $gateway = "192.168.0.254"
+$netmask = "255.255.255.0"
 $proxy_port = 3128
 
 $vm = {

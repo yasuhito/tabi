@@ -417,7 +417,7 @@ iface lo inet loopback
 auto eth0
 iface eth0 inet static
   address #{ $vm[ :management ][ :ip ] }
-  netmask 255.255.255.0
+  netmask #{ $netmask }
   gateway #{ $gateway }
 EOF
   end
@@ -426,7 +426,7 @@ EOF
 end
 
 
-# [TODO] subnet と netmask がハードコードされているのを直す
+# [TODO] subnet がハードコードされているのを直す
 # [TODO] 複数クライアントに対応
 def setup_dhcpd
   sh "sudo apt-get install isc-dhcp-server"
@@ -438,7 +438,7 @@ option domain-name-servers 8.8.8.8;
 default-lease-time 600;
 max-lease-time 7200;
 
-subnet 192.168.0.0 netmask 255.255.255.0 {
+subnet 192.168.0.0 netmask #{ $netmask } {
   option routers #{ $gateway };
   host guest {
     hardware ethernet #{ $vm[ :guest ][ :mac ]};
