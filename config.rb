@@ -25,5 +25,6 @@ $switch = {
 
 # trema コマンドの場所
 def trema
+  # [TODO] base_dir を使うのをやめて、上の require "common" を無くす。
   File.join base_dir, "..", "trema", "trema"
 end

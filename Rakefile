@@ -358,7 +358,6 @@ task :default => :test
 # VM setup
 ################################################################################
 
-
 def setup_network
   tmp_interfaces = File.join( tmp_dir, "interfaces" )
   File.open( tmp_interfaces, "w" ) do | file |
