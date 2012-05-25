@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 $LOAD_PATH.unshift File.dirname( __FILE__ )
-require "config"
+require "common"
 require "rake"
 
 sh "/sbin/ifconfig #{ ARGV[ 0 ] } 0.0.0.0 down"

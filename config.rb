@@ -1,43 +1,7 @@
 # -*- coding: utf-8 -*-
-require "fileutils"
+$LOAD_PATH.unshift File.expand_path( File.join File.dirname( __FILE__ ), "lib" )
+require "common"
 
-
-################################################################################
-# !!! ここは編集しない !!!
-################################################################################
-
-def base_dir
-  File.dirname __FILE__
-end
-
-
-def dir name, *names
-  path = File.join( *names )
-  Kernel.send( :define_method, name ) do
-    FileUtils.mkdir_p path if not File.directory?( path )
-    path
-  end
-end
-
-
-dir :script_dir, base_dir, "script"
-dir :vendor_dir, base_dir, "vendor"
-dir :tmp_dir, base_dir, "tmp"
-dir :object_dir, tmp_dir, "object"
-dir :openvswitch_dir, vendor_dir, "openvswitch-1.4.0"
-dir :vswitch_dir, tmp_dir, "openvswitch"
-dir :vswitch_run_dir, vswitch_dir, "run", "openvswitch"
-dir :vswitch_log_dir, vswitch_dir, "log", "openvswitch"
-
-
-def vsctl
-  File.join object_dir, "bin", "ovs-vsctl"
-end
-
-
-################################################################################
-# ここから設定
-################################################################################
 
 # ネットワーク情報
 $network = "192.168.0.0/24"
