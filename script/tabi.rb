@@ -47,12 +47,20 @@ class Tabi < Controller
 
 
   def packet_in dpid, message
-    if message.from_guest?
+    if @user_db.pending?( message.macsa )
       @user_db.learn message
       if message.http?
         packet_out_management message
       else
         # [TODO] ARP と DHCP, DNS は通して、それ以外は通さないように
+        flood message
+      end
+    elsif @user_db.allowed?( message.macsa )
+      port_no = @fdb.dest_port_of( message )
+      if port_no
+        flow_mod datapath_id, message, port_no
+        packet_out datapath_id, message, port_no
+      else
         flood message
       end
     elsif message.to_guest? @user_db.mac_list
@@ -95,6 +103,15 @@ class Tabi < Controller
     send_packet_out(
       dpid,
       :packet_in => message,
+      :actions => ActionOutput.new( port_no )
+    )
+  end
+
+
+  def flow_mod datapath_id, message, port_no
+    send_flow_mod_add(
+      datapath_id,
+      :match => ExactMatch.from( message ),
       :actions => ActionOutput.new( port_no )
     )
   end

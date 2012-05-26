@@ -63,6 +63,22 @@ class UserDB
   end
 
 
+  def pending? mac
+    list = Dir.glob( File.join( pending_dir, "*" ) ).collect do | each |
+      File.basename each
+    end
+    list.include? mac
+  end
+
+
+  def allowed? mac
+    list = Dir.glob( File.join( allow_dir, "*" ) ).collect do | each |
+      File.basename each
+    end
+    list.include? mac
+  end
+
+
   def dest_port_of message
     @fdb.port_no_of message.macda
   end
