@@ -26,6 +26,7 @@ end
 class Tabi < Controller
   def start
     @user_db = UserDB.new
+    @user_db.cleanup
     @fdb = FDB.new
   end
 

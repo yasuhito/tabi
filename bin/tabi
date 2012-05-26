@@ -1,17 +1,5 @@
 #!/usr/bin/env ruby
 # -*- coding: utf-8 -*-
-# 1.9 adds realpath to resolve symlinks; 1.8 doesn't
-# have this method, so we add it so we get resolved symlinks
-# and compatibility
-unless File.respond_to? :realpath
-  class File #:nodoc:
-    def self.realpath path
-      return realpath(File.readlink(path)) if symlink?(path)
-      path
-    end
-  end
-end
-
 
 require "rubygems"
 
@@ -27,28 +15,34 @@ require "user-db"
 include GLI
 
 
-program_desc "tabi クラウドルータ管理コマンド"
+program_desc "tabi cloud router management command"
 
 version Tabi::VERSION
 
 
-desc "接続許可待ちのユーザを表示"
+def list_users dir
+  Dir.glob( File.join( dir, "*" ) ).each do | each |
+    puts File.basename( each )
+  end
+end
+
+
+desc "Adds a user to waiting list"
 long_desc """
-インターネットへの接続許可待ちのユーザ一覧を表示する。
-ユーザは allow コマンドで接続を許可、または deny コマンドで禁止することができる。
+Adds a user to pending approval queue. One can allow or deny the
+internet connection of the pending users with \"tabi allow\" or \"tabi
+deny\" command.
 """
+arg_name "MAC_address ..."
 command :pending do | c |
   c.action do | global_options, options, args |
-    # If you have any errors, just raise them
-    # raise "that command made no sense"
-    #
-    # [TODO] 余計な引数が与えられたときのエラー処理
     if args.empty?
-      Dir.glob( File.join( pending_dir, "*" ) ).each do | each |
-        puts File.basename( each )
-      end
+      list_users pending_dir
     else
       args.each do | each |
+        user_db = UserDB.new
+        next if user_db.allowed?( each )
+        next if user_db.denied?( each )
         FileUtils.touch File.join( pending_dir, each )
       end
     end
@@ -56,20 +50,26 @@ command :pending do | c |
 end
 
 
-desc "ユーザの接続を許可"
+def check_pending_user mac
+  user_db = UserDB.new
+  if not user_db.pending?( mac )
+    raise "No such pending user: #{ mac }"
+  end
+end
+
+
+desc "Allows user's connection"
 long_desc """
-指定したユーザのインターネット接続を許可する。
+Allows the internet connection of specified pending user.
 """
-arg_name "user_mac_address ..."
+arg_name "MAC_address ..."
 command :allow do | c |
   c.action do | global_options, options, args |
     if args.empty?
-      Dir.glob( File.join( allow_dir, "*" ) ).each do | each |
-        puts File.basename( each )
-      end
+      list_users allow_dir
     else
       args.each do | each |
-        # [TODO] 指定された MAC アドレスが無かったときのエラー処理
+        check_pending_user each
         FileUtils.mv File.join( pending_dir, each ), allow_dir
       end
     end
@@ -77,20 +77,18 @@ command :allow do | c |
 end
 
 
-desc "ユーザの接続を禁止"
+desc "Denies user's connection"
 long_desc """
-指定したユーザのインターネット接続を禁止する。
+Denies the internet connection of specified pending user.
 """
-arg_name "user_mac_address ..."
+arg_name "MAC_address ..."
 command :deny do | c |
   c.action do | global_options, options, args |
     if args.empty?
-      Dir.glob( File.join( deny_dir, "*" ) ).each do | each |
-        puts File.basename( each )
-      end
+      list_users deny_dir
     else
       args.each do | each |
-        # [TODO] 指定された MAC アドレスが無かったときのエラー処理
+        check_pending_user each
         FileUtils.mv File.join( pending_dir, each ), deny_dir
       end
     end
@@ -98,26 +96,4 @@ command :deny do | c |
 end
 
 
-pre do |global,command,options,args|
-  # Pre logic here
-  # Return true to proceed; false to abort and not call the
-  # chosen command
-  # Use skips_pre before a command to skip this block
-  # on that command only
-  true
-end
-
-post do |global,command,options,args|
-  # Post logic here
-  # Use skips_post before a command to skip this
-  # block on that command only
-end
-
-on_error do |exception|
-  # Error logic here
-  # return false to skip default error handling
-  true
-end
-
-
-exit GLI.run(ARGV)
+exit GLI.run( ARGV )

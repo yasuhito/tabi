@@ -11,8 +11,8 @@ dir :deny_dir, tmp_dir, "deny"
 
 
 class UserDB
-  def initialize
-    cleanup_db
+  def cleanup
+    FileUtils.rm_rf pending_dir
   end
 
 
@@ -38,16 +38,6 @@ class UserDB
       File.basename each
     end
     list.include? mac.to_s
-  end
-  
-
-  ##############################################################################
-  private
-  ##############################################################################
-
-
-  def cleanup_db
-    FileUtils.rm_rf pending_dir
   end
 end
 
