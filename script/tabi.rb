@@ -6,6 +6,7 @@
 $LOAD_PATH.unshift File.expand_path( File.join File.dirname( __FILE__ ), "lib" )
 
 require "config"
+require "fdb"
 require "user-db"
 
 
@@ -38,6 +39,7 @@ end
 class Tabi < Controller
   def start
     @user_db = UserDB.new
+    @fdb = FDB.new
   end
 
 
@@ -47,8 +49,9 @@ class Tabi < Controller
 
 
   def packet_in dpid, message
+    @fdb.learn message.macsa, message.in_port
+
     if @user_db.pending?( message.macsa )
-      @user_db.learn message
       if message.http?
         packet_out_management message
       else
@@ -56,15 +59,14 @@ class Tabi < Controller
         flood message
       end
     elsif @user_db.allowed?( message.macsa )
-      # [TODO] これだと宛先を学習してないので、全部 flood になっちゃう
-      port_no = @user_db.dest_port_of( message )
+      port_no = @fdb.port_no_of( message.macda )
       if port_no
-        flow_mod datapath_id, message, port_no
-        packet_out datapath_id, message, port_no
+        flow_mod dpid, message, port_no
+        packet_out dpid, message, port_no
       else
         flood message
       end
-    elsif message.to_guest? @user_db.mac_list
+    elsif message.to_guest? @fdb.mac_list
       packet_out_guest message
     else
       flood message
@@ -109,9 +111,9 @@ class Tabi < Controller
   end
 
 
-  def flow_mod datapath_id, message, port_no
+  def flow_mod dpid, message, port_no
     send_flow_mod_add(
-      datapath_id,
+      dpid,
       :match => ExactMatch.from( message ),
       :actions => ActionOutput.new( port_no )
     )
@@ -135,7 +137,7 @@ class Tabi < Controller
     send_packet_out(
       dpid_guest,
       :packet_in => message,
-      :actions => ActionOutput.new( @user_db.dest_port_of( message ) )
+      :actions => ActionOutput.new( @fdb.port_no_of message.macda )
     )
   end
 
