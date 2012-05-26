@@ -21,11 +21,6 @@ class FDB
   end
 
 
-  def mac_list
-    @db.keys
-  end
-
-
   def port_no_of mac
     dest = @db[ mac.to_s ]
     if dest
@@ -40,11 +35,6 @@ class FDB
     if @db[ mac.to_s ].nil?
       @db[ mac.to_s ] = ForwardingEntry.new( mac.to_s, port_no, dpid )
     end
-  end
-
-
-  def lookup mac
-    @db[ mac.to_s ]
   end
 end
 

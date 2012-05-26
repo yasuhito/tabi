@@ -20,19 +20,6 @@ class Trema::PacketIn
   def http?
     tcp_dst_port == 80
   end
-
-
-  # [TODO] management または gw から以外であればゲストから、というふうに判定をマトモにする
-  # [TODO] この判定は Tabi クラス内でやる
-  def from_guest?
-    macsa.to_s == $vm[ :guest ][ :mac ]
-  end
-
-
-  # [TODO] この判定は Tabi クラス内でやる
-  def to_guest? user_mac_list
-    user_mac_list.include? macda.to_s
-  end
 end
 
 
@@ -66,10 +53,15 @@ class Tabi < Controller
       else
         flood message
       end
-    elsif message.to_guest? @fdb.mac_list
-      packet_out_guest message
+    elsif @user_db.denied?( message.macsa )
+      # DROP
     else
-      flood message
+      port_no = @fdb.port_no_of( message.macda )
+      if port_no
+        packet_out dpid_guest, message, port_no
+      else
+        flood message
+      end
     end
   end
 
@@ -102,19 +94,19 @@ class Tabi < Controller
   end
 
 
-  def packet_out dpid, message, port_no
-    send_packet_out(
+  def flow_mod dpid, message, port_no
+    send_flow_mod_add(
       dpid,
-      :packet_in => message,
+      :match => ExactMatch.from( message ),
       :actions => ActionOutput.new( port_no )
     )
   end
 
 
-  def flow_mod dpid, message, port_no
-    send_flow_mod_add(
+  def packet_out dpid, message, port_no
+    send_packet_out(
       dpid,
-      :match => ExactMatch.from( message ),
+      :packet_in => message,
       :actions => ActionOutput.new( port_no )
     )
   end
@@ -129,15 +121,6 @@ class Tabi < Controller
         ActionSetDlDst.new( :dl_dst => Trema::Mac.new( $vm[ :management ][ :mac ] ) ),
         ActionOutput.new( management_vm_port )
       ]
-    )
-  end
-
-
-  def packet_out_guest message
-    send_packet_out(
-      dpid_guest,
-      :packet_in => message,
-      :actions => ActionOutput.new( @fdb.port_no_of message.macda )
     )
   end
 

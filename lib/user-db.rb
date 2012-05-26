@@ -33,6 +33,14 @@ class UserDB
   end
 
 
+  def denied? mac
+    list = Dir.glob( File.join( deny_dir, "*" ) ).collect do | each |
+      File.basename each
+    end
+    list.include? mac.to_s
+  end
+  
+
   ##############################################################################
   private
   ##############################################################################
