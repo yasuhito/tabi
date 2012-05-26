@@ -43,9 +43,14 @@ command :pending do | c |
     # raise "that command made no sense"
     #
     # [TODO] 余計な引数が与えられたときのエラー処理
-
-    Dir.glob( File.join( pending_dir, "*" ) ).each do | each |
-      puts File.basename( each )
+    if args.empty?
+      Dir.glob( File.join( pending_dir, "*" ) ).each do | each |
+        puts File.basename( each )
+      end
+    else
+      args.each do | each |
+        FileUtils.touch File.join( pending_dir, each )
+      end
     end
   end
 end
