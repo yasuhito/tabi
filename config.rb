@@ -13,7 +13,7 @@ $proxy_port = 3128
 
 # VM の設定
 $vm = {
-  :management => { :mac => "00:11:22:ee:ee:01", :memory => 256, :tap => "tap0", :ip => "192.168.0.1" },
+  :management => { :mac => "00:11:22:ee:ee:01", :memory => 1024, :tap => "tap0", :ip => "192.168.0.1" },
   :guest => { :mac => "00:11:22:ee:ee:02", :memory => 128, :tap => "tap1", :ip => "192.168.0.2" }
 }
 
