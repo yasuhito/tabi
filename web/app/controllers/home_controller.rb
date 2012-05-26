@@ -1,12 +1,17 @@
 class HomeController < ApplicationController
   def index
-    logger.info "MAC address = #{ client_MAC }"
+    system "#{ tabi } allow #{ client_MAC }" if client_MAC
   end
 
 
   ##############################################################################
   private
   ##############################################################################
+
+
+  def tabi
+    File.join File.dirname( __FILE__ ), "../../../bin/tabi"
+  end
 
 
   def client_MAC
