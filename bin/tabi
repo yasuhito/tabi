@@ -40,20 +40,9 @@ command :pending do | c |
       list_users pending_dir
     else
       args.each do | each |
-        user_db = UserDB.new
-        next if user_db.allowed?( each )
-        next if user_db.denied?( each )
-        FileUtils.touch File.join( pending_dir, each )
+        UserDB.new.pending each
       end
     end
-  end
-end
-
-
-def check_pending_user mac
-  user_db = UserDB.new
-  if not user_db.pending?( mac )
-    raise "No such pending user: #{ mac }"
   end
 end
 
@@ -69,8 +58,7 @@ command :allow do | c |
       list_users allow_dir
     else
       args.each do | each |
-        check_pending_user each
-        FileUtils.mv File.join( pending_dir, each ), allow_dir
+        UserDB.new.allow each
       end
     end
   end
@@ -88,8 +76,7 @@ command :deny do | c |
       list_users deny_dir
     else
       args.each do | each |
-        check_pending_user each
-        FileUtils.mv File.join( pending_dir, each ), deny_dir
+        UserDB.new.deny each
       end
     end
   end

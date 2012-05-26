@@ -20,6 +20,13 @@ class Trema::PacketIn
   def http?
     tcp_dst_port == 80
   end
+
+
+  def dhcp_pack?
+    if udp_src_port == 67 and udp_dst_port == 68
+      data.unpack( "H*" )[ 0 ][ -116, 2 ] == "05"
+    end
+  end
 end
 
 
@@ -39,28 +46,29 @@ class Tabi < Controller
   def packet_in dpid, message
     @fdb.learn message.macsa, message.in_port, dpid
 
-    if guest_packet_in?( message )
-      if @user_db.pending?( message.macsa )
-        if message.http?
-          packet_out_management message
-        else
-          # [TODO] ARP と DHCP, DNS は通して、それ以外は通さないように
-          flood message
-        end
-      elsif @user_db.allowed?( message.macsa )
-        port_no = @fdb.port_no_of( message.macda )
-        if port_no
-          flow_mod dpid, message, port_no
-          packet_out dpid, message, port_no
-        else
-          flood message
-        end
-      elsif @user_db.denied?( message.macsa )
-        # DROP
+    if message.dhcp_pack?
+      @user_db.pending message.macda.to_s
+      packet_out dpid_guest, message, @fdb.port_no_of( message.macda )
+      return
+    end
+
+    if @user_db.pending?( message.macsa )
+      if message.http?
+        packet_out_management message
       else
-        # [TODO] DHCP のみ通す
+        # [TODO] ARP と DHCP, DNS は通して、それ以外は通さないように
         flood message
       end
+    elsif @user_db.allowed?( message.macsa )
+      port_no = @fdb.port_no_of( message.macda )
+      if port_no
+        flow_mod dpid, message, port_no
+        packet_out dpid, message, port_no
+      else
+        flood message
+      end
+    elsif @user_db.denied?( message.macsa )
+      # DROP
     else
       fdb_entry = @fdb[ message.macda ]
       if fdb_entry
@@ -75,12 +83,6 @@ class Tabi < Controller
   ##############################################################################
   private
   ##############################################################################
-
-
-  # [TODO] management または gw から以外であればゲストから、というふうに判定をマトモにする
-  def guest_packet_in? message
-    message.macsa.to_s == $vm[ :guest ][ :mac ]
-  end
 
 
   def switch_name dpid
