@@ -63,11 +63,12 @@ class UserDB
   end
 
 
+  # [TODO] allowed? とかぶってるのでリファクタリング
   def pending? mac
     list = Dir.glob( File.join( pending_dir, "*" ) ).collect do | each |
       File.basename each
     end
-    list.include? mac
+    list.include? mac.to_s
   end
 
 
@@ -75,7 +76,7 @@ class UserDB
     list = Dir.glob( File.join( allow_dir, "*" ) ).collect do | each |
       File.basename each
     end
-    list.include? mac
+    list.include? mac.to_s
   end
 
 

@@ -56,7 +56,8 @@ class Tabi < Controller
         flood message
       end
     elsif @user_db.allowed?( message.macsa )
-      port_no = @fdb.dest_port_of( message )
+      # [TODO] これだと宛先を学習してないので、全部 flood になっちゃう
+      port_no = @user_db.dest_port_of( message )
       if port_no
         flow_mod datapath_id, message, port_no
         packet_out datapath_id, message, port_no

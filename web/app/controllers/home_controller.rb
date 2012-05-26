@@ -1,6 +1,6 @@
 class HomeController < ApplicationController
   def index
-    system "#{ tabi } allow #{ client_MAC }" if client_MAC
+    # system "#{ tabi } allow #{ client_MAC }" if client_MAC
   end
 
 

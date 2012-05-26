@@ -226,6 +226,36 @@ namespace :kill do
 end
 
 
+namespace :run do
+  desc "start DHCP server"
+  task :dhcp do
+    # [TODO] subnet がハードコードされているのを直す
+    # [TODO] 複数クライアントに対応
+    sh "sudo apt-get install isc-dhcp-server"
+    tmp_dhcpd_conf = File.join( tmp_dir, "dhcpd.conf" )
+    File.open( tmp_dhcpd_conf, "w" ) do | file |
+      file.puts <<-EOF
+option domain-name-servers 8.8.8.8;
+
+default-lease-time 600;
+max-lease-time 7200;
+
+subnet 192.168.0.0 netmask #{ $netmask } {
+  option routers #{ $gateway };
+  host guest {
+    hardware ethernet #{ $vm[ :guest ][ :mac ]};
+    fixed-address #{ $vm[ :guest ][ :ip ] };
+  }
+}
+EOF
+    end
+    sh "sudo cp #{ tmp_dhcpd_conf } /etc/dhcp/"
+    sh "sudo stop isc-dhcp-server"
+    sh "sudo start isc-dhcp-server"
+  end
+end
+
+
 ################################################################################
 # KVM
 ################################################################################
@@ -377,32 +407,6 @@ EOF
 end
 
 
-# [TODO] subnet がハードコードされているのを直す
-# [TODO] 複数クライアントに対応
-def setup_dhcpd
-  sh "sudo apt-get install isc-dhcp-server"
-  tmp_dhcpd_conf = File.join( tmp_dir, "dhcpd.conf" )
-  File.open( tmp_dhcpd_conf, "w" ) do | file |
-    file.puts <<-EOF
-option domain-name-servers 8.8.8.8;
-
-default-lease-time 600;
-max-lease-time 7200;
-
-subnet 192.168.0.0 netmask #{ $netmask } {
-  option routers #{ $gateway };
-  host guest {
-    hardware ethernet #{ $vm[ :guest ][ :mac ]};
-    fixed-address #{ $vm[ :guest ][ :ip ] };
-  }
-}
-EOF
-  end
-  sh "sudo cp #{ tmp_dhcpd_conf } /etc/dhcp/"
-  sh "sudo /etc/init.d/isc-dhcp-server restart"
-end
-
-
 def setup_transparent_proxy
   sh "sudo apt-get install squid"
 
@@ -470,7 +474,6 @@ namespace :init do
   desc "initialize management VM environment"
   task :management do
     setup_network
-    setup_dhcpd
     setup_transparent_proxy
   end
 end
