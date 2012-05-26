@@ -1,11 +1,9 @@
 class ForwardingEntry
-  attr_reader :mac
   attr_reader :port_no
   attr_reader :dpid
 
 
-  def initialize mac, port_no, dpid
-    @mac = mac
+  def initialize port_no, dpid
     @port_no = port_no
     @dpid = dpid
   end
@@ -31,10 +29,25 @@ class FDB
   end
 
 
-  def learn mac, port_no, dpid = nil
-    if @db[ mac.to_s ].nil?
-      @db[ mac.to_s ] = ForwardingEntry.new( mac.to_s, port_no, dpid )
+  def dpid_of mac
+    dest = @db[ mac.to_s ]
+    if dest
+      dest.dpid
+    else
+      nil
     end
+  end
+
+
+  def learn mac, port_no, dpid
+    if @db[ mac.to_s ].nil?
+      @db[ mac.to_s ] = ForwardingEntry.new( port_no, dpid )
+    end
+  end
+
+
+  def [] mac
+    @db[ mac.to_s ]
   end
 end
 

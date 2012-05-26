@@ -36,7 +36,7 @@ class Tabi < Controller
 
 
   def packet_in dpid, message
-    @fdb.learn message.macsa, message.in_port
+    @fdb.learn message.macsa, message.in_port, dpid
 
     if @user_db.pending?( message.macsa )
       if message.http?
@@ -56,9 +56,9 @@ class Tabi < Controller
     elsif @user_db.denied?( message.macsa )
       # DROP
     else
-      port_no = @fdb.port_no_of( message.macda )
-      if port_no
-        packet_out dpid_guest, message, port_no
+      fdb_entry = @fdb[ message.macda ]
+      if fdb_entry
+        packet_out fdb_entry.dpid, message, fdb_entry.port_no
       else
         flood message
       end
