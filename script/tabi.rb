@@ -22,10 +22,20 @@ class Trema::PacketIn
   end
 
 
+  def dhcp?
+    ( udp_src_port == 67 and udp_dst_port == 68 ) or ( udp_src_port == 68 and udp_dst_port == 67 )
+  end
+
+
   def dhcp_pack?
     if udp_src_port == 67 and udp_dst_port == 68
       data.unpack( "H*" )[ 0 ][ -116, 2 ] == "05"
     end
+  end
+
+
+  def dns?
+    udp_dst_port == 53
   end
 end
 
@@ -55,9 +65,10 @@ class Tabi < Controller
     if @user_db.pending?( message.macsa )
       if message.http?
         packet_out_management message
-      else
-        # [TODO] ARP と DHCP, DNS は通して、それ以外は通さないように
+      elsif message.arp? or message.dhcp? or message.dns?
         flood message
+      else
+        # DROP
       end
     elsif @user_db.allowed?( message.macsa )
       port_no = @fdb.port_no_of( message.macda )
