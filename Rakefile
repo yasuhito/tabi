@@ -303,7 +303,7 @@ def generate_runsh name, memory, mac, tap
     f.puts <<-EOF
 #!/bin/sh
 
-exec kvm -m #{ memory } -smp 1 -drive file=#{ vm_image name } -net nic,macaddr=#{ mac } -net tap,ifname=#{ tap },script=#{ ovs_ifup },downscript=#{ ovs_ifdown } "$@"
+exec kvm -m #{ memory } -smp 1 -drive file=#{ vm_image name } -net nic,macaddr=#{ mac } -vnc :0 -net tap,ifname=#{ tap },script=#{ ovs_ifup },downscript=#{ ovs_ifdown } "$@"
 EOF
   end
   sh "chmod +x #{ runsh name }"
@@ -385,38 +385,21 @@ task :default => :test
 
 
 ################################################################################
-# VM setup
+# Squid
 ################################################################################
 
-def setup_network
-  tmp_interfaces = File.join( tmp_dir, "interfaces" )
-  File.open( tmp_interfaces, "w" ) do | file |
-    file.puts <<-EOF
-auto lo
-iface lo inet loopback
+namespace :run do
+  desc "start squid"
+  task :squid do
+    etc_squid = "/etc/squid3/"
 
-auto eth0
-iface eth0 inet static
-  address #{ $vm[ :management ][ :ip ] }
-  netmask #{ $netmask }
-  gateway #{ $gateway }
-EOF
-  end
-  sh "sudo cp #{ tmp_interfaces } /etc/network/"
-  sh "sudo /etc/init.d/networking restart"
-end
+    sh "sudo apt-get install squid"
+    sh "sudo cp #{ File.join script_dir, "redirector.rb" } #{ etc_squid }"
+    sh "sudo chmod +x #{ etc_squid }/redirector.rb"
 
-
-def setup_transparent_proxy
-  sh "sudo apt-get install squid"
-
-  # [TODO] squid 設定ディレクトリも変数か定数にする
-  sh "sudo cp #{ File.join script_dir, "redirector.rb" } /etc/squid/"
-  sh "sudo chmod +x /etc/squid/redirector.rb"
-
-  tmp_squid_conf = File.join( tmp_dir, "squid.conf" )
-  File.open( tmp_squid_conf, "w" ) do | file |
-    file.puts <<-EOF
+    tmp_squid_conf = File.join( tmp_dir, "squid.conf" )
+    File.open( tmp_squid_conf, "w" ) do | file |
+      file.puts <<-EOF
 acl all src all
 acl localhost src 127.0.0.1/32
 acl localnet src #{ $network }
@@ -431,49 +414,18 @@ http_access deny all
 icp_access deny all
 
 http_port #{ $proxy_port } transparent
-url_rewrite_program /etc/squid/redirector.rb
+url_rewrite_program #{ etc_squid }/redirector.rb
 always_direct allow all
 
 acl CONNECT method CONNECT
-access_log /var/log/squid/access.log squid
+access_log /var/log/squid3/access.log squid
 hosts_file /etc/hosts
-coredump_dir /var/spool/squid
+coredump_dir /var/spool/squid3
 EOF
-  end
-  sh "sudo cp #{ tmp_squid_conf } /etc/squid/"
-  sh "sudo service squid restart"
+    end
+    sh "sudo cp #{ tmp_squid_conf } #{ etc_squid }"
+    sh "sudo service squid3 restart"
 
-  tmp_iptables_rules = File.join( tmp_dir, "iptables.rules" )
-  File.open( tmp_iptables_rules, "w" ) do | file |
-    file.puts <<-EOF
-*nat
-:PREROUTING ACCEPT [0:0]
-:INPUT ACCEPT [0:0]
-:OUTPUT ACCEPT [0:0]
-:POSTROUTING ACCEPT [0:0]
--A PREROUTING -i eth0 -p tcp -m tcp --dport 80 -j REDIRECT --to-ports 3128
-COMMIT
-EOF
-  end
-  sh "sudo cp #{ tmp_iptables_rules } /etc/"
-
-  tmp_iptables_start = File.join( tmp_dir, "iptables_start" )
-  File.open( tmp_iptables_start, "w" ) do | file |
-    file.puts <<-EOF
-#!/bin/sh
-/sbin/iptables-restore < /etc/iptables.rules
-exit 0
-EOF
-  end
-  sh "sudo cp #{ tmp_iptables_start } /etc/network/if-pre-up.d/"
-  sh "sudo chmod a+x /etc/network/if-pre-up.d/iptables_start"
-end
-
-
-namespace :init do
-  desc "initialize management VM environment"
-  task :management do
-    setup_network
-    setup_transparent_proxy
+    sh "sudo iptables -t nat -A PREROUTING -i veth -p tcp -m tcp --dport 80 -j REDIRECT --to-ports #{ $proxy_port }"
   end
 end
