@@ -41,9 +41,6 @@ end
 
 
 class Tabi < Controller
-  attr_reader :management_port
-
-
   def start
     @user_db = UserDB.new
     @user_db.cleanup
@@ -60,7 +57,6 @@ class Tabi < Controller
     @fdb.learn message.macsa, message.in_port, dpid
 
     if message.dhcp_pack?
-      @management_port = message.in_port
       @user_db.pending message.macda.to_s
       packet_out dpid_guest, message, @fdb.port_no_of( message.macda )
       return
@@ -69,10 +65,8 @@ class Tabi < Controller
     if @user_db.pending?( message.macsa )
       if message.http?
         packet_out_management message
-      elsif message.icmpv4? or message.arp?
-        packet_out dpid_guest, message, OFPP_FLOOD
-      elsif message.dhcp? or message.dns?
-        packet_out dpid_guest, message, management_port
+      elsif message.arp? or message.dhcp? or message.dns?
+        flood message
       else
         # DROP
       end
@@ -89,7 +83,7 @@ class Tabi < Controller
     else
       fdb_entry = @fdb[ message.macda ]
       if fdb_entry
-        packet_out dpid_guest, message, fdb_entry.port_no
+        packet_out fdb_entry.dpid, message, fdb_entry.port_no
       else
         flood message
       end
@@ -115,6 +109,16 @@ class Tabi < Controller
   end
 
 
+  def dpid_management
+    $switch[ :management ][ :dpid ]
+  end
+
+
+  def management_vm_port
+    1
+  end
+
+
   def flow_mod dpid, message, port_no
     send_flow_mod_add(
       dpid,
@@ -136,18 +140,20 @@ class Tabi < Controller
   def packet_out_management message
     # [TODO] ActionSetDlDst.new( "00:11:22:33:44:55" ) と書けるように Trema 本体を修正
     send_packet_out(
-      dpid_guest,
+      dpid_management,
       :packet_in => message,
       :actions => [
         ActionSetDlDst.new( :dl_dst => Trema::Mac.new( $vm[ :management ][ :mac ] ) ),
-        ActionOutput.new( management_port )
+        ActionOutput.new( management_vm_port )
       ]
     )
   end
 
 
   def flood message
-    packet_out dpid_guest, message, OFPP_FLOOD
+    [ dpid_guest, dpid_management ].each do | each |
+      packet_out each, message, OFPP_FLOOD
+    end
   end
 end
 
