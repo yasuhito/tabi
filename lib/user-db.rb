@@ -1,17 +1,15 @@
-# -*- coding: utf-8 -*-
 $LOAD_PATH.unshift File.expand_path( File.join File.dirname( __FILE__ ), ".." )
 
 require "common"
-require "config"
 require "fileutils"
 
 
-dir :pending_dir, tmp_dir, "pending"
-dir :allow_dir, tmp_dir, "allow"
-dir :deny_dir, tmp_dir, "deny"
-
-
 class UserDB
+  dir :pending_dir, tmp_dir, "pending"
+  dir :allow_dir, tmp_dir, "allow"
+  dir :deny_dir, tmp_dir, "deny"
+
+
   def cleanup
     FileUtils.rm_rf pending_dir
     FileUtils.rm_rf allow_dir
@@ -26,40 +24,35 @@ class UserDB
   end
 
 
-  # [TODO] allowed? とかぶってるのでリファクタリング
   def pending? mac
-    list = Dir.glob( File.join( pending_dir, "*" ) ).collect do | each |
-      File.basename each
-    end
-    list.include? mac.to_s
+    list( :pending ).include? mac.to_s
   end
 
 
   def allow mac
-    check_pending_user mac
-    FileUtils.mv File.join( pending_dir, mac ), allow_dir
+    mv_to :allow, mac
   end
 
 
   def allowed? mac
-    list = Dir.glob( File.join( allow_dir, "*" ) ).collect do | each |
-      File.basename each
-    end
-    list.include? mac.to_s
+    list( :allow ).include? mac.to_s
   end
 
 
   def deny mac
-    check_pending_user mac
-    FileUtils.mv File.join( pending_dir, mac ), deny_dir
+    mv_to :deny, mac
   end
 
 
   def denied? mac
-    list = Dir.glob( File.join( deny_dir, "*" ) ).collect do | each |
+    list( :deny ).include? mac.to_s
+  end
+
+
+  def list name
+    Dir.glob( File.join status_dir( name ), "*" ).collect do | each |
       File.basename each
     end
-    list.include? mac.to_s
   end
 
 
@@ -68,10 +61,16 @@ class UserDB
   ##############################################################################
 
 
-  def check_pending_user mac
-    if not pending?( mac )
-      raise "No such pending user: #{ mac }"
-    end
+  def status_dir name
+    dir = { :pending => pending_dir, :allow => allow_dir, :deny => deny_dir }[ name ]
+    raise "Invalid user status: #{ name }" if dir.nil?
+    dir
+  end
+
+
+  def mv_to status, mac
+    pending?( mac ) or raise "No such pending user: #{ mac }"
+    FileUtils.mv File.join( pending_dir, mac ), status_dir( status )
   end
 end
 

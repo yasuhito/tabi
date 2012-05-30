@@ -1,13 +1,10 @@
 #!/usr/bin/env ruby
-# -*- coding: utf-8 -*-
 
 require "rubygems"
+require "gli"
 
 $LOAD_PATH.unshift File.expand_path( File.join File.dirname( __FILE__ ), "..", "lib" )
-$LOAD_PATH.unshift File.expand_path( File.join File.dirname( __FILE__ ), ".." )
 
-require "config"
-require "gli"
 require "tabi_version"
 require "user-db"
 
@@ -15,14 +12,25 @@ require "user-db"
 include GLI
 
 
-program_desc "tabi cloud router management command"
+program_desc "tabi cloud-router management command"
 
 version Tabi::VERSION
 
 
-def list_users dir
-  Dir.glob( File.join( dir, "*" ) ).each do | each |
-    puts File.basename( each )
+def sub_command name
+  user_db = UserDB.new
+  command name do | c |
+    c.action do | global_options, options, args |
+      if args.empty?
+        user_db.list( name ).each do | each |
+          puts each
+        end
+      else
+        args.each do | each |
+          user_db.__send__ name, each
+        end
+      end
+    end
   end
 end
 
@@ -34,17 +42,7 @@ internet connection of the pending users with \"tabi allow\" or \"tabi
 deny\" command.
 """
 arg_name "MAC_address ..."
-command :pending do | c |
-  c.action do | global_options, options, args |
-    if args.empty?
-      list_users pending_dir
-    else
-      args.each do | each |
-        UserDB.new.pending each
-      end
-    end
-  end
-end
+sub_command :pending
 
 
 desc "Allows user's connection"
@@ -52,17 +50,7 @@ long_desc """
 Allows the internet connection of specified pending user.
 """
 arg_name "MAC_address ..."
-command :allow do | c |
-  c.action do | global_options, options, args |
-    if args.empty?
-      list_users allow_dir
-    else
-      args.each do | each |
-        UserDB.new.allow each
-      end
-    end
-  end
-end
+sub_command :allow
 
 
 desc "Denies user's connection"
@@ -70,17 +58,7 @@ long_desc """
 Denies the internet connection of specified pending user.
 """
 arg_name "MAC_address ..."
-command :deny do | c |
-  c.action do | global_options, options, args |
-    if args.empty?
-      list_users deny_dir
-    else
-      args.each do | each |
-        UserDB.new.deny each
-      end
-    end
-  end
-end
+sub_command :deny
 
 
 exit GLI.run( ARGV )
