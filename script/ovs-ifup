@@ -9,6 +9,7 @@ require "rake"
 sh "/sbin/ifconfig #{ ARGV[ 0 ] } 0.0.0.0 up"
 $vm.each do | name, attr |
   if attr[ :tap ] == ARGV[ 0 ]
+    sh "#{ vsctl } del-port #{ ARGV[ 0 ] }" rescue nil
     sh "#{ vsctl } add-port #{ $switch[ name ][ :bridge ] } #{ ARGV[ 0 ] }"
     exit
   end

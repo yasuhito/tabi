@@ -7,7 +7,7 @@ end
 
 
 def dir name, *names
-  path = File.join( *names )
+  path = File.expand_path( File.join *names )
   Kernel.send( :define_method, name ) do
     FileUtils.mkdir_p path if not File.directory?( path )
     path

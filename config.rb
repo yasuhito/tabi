@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-$LOAD_PATH.unshift File.expand_path( File.join File.dirname( __FILE__ ), "lib" )
-require "common"
-
 
 # ネットワーク情報
 $network = "192.168.0.0/24"
@@ -13,7 +10,7 @@ $proxy_port = 3128
 
 # VM の設定
 $vm = {
-  :management => { :mac => "4a:b4:7c:f0:2a:08", :memory => 512, :tap => "tap0", :ip => "192.168.0.1" },
+  :management => { :mac => "8a:0b:b3:32:74:9c", :memory => 512, :tap => "tap0", :ip => "192.168.0.1" },
   :guest => { :mac => "00:11:22:ee:ee:02", :memory => 1024, :tap => "tap1", :ip => "192.168.0.2" }
 }
 
@@ -25,6 +22,5 @@ $switch = {
 
 # trema コマンドの場所
 def trema
-  # [TODO] base_dir を使うのをやめて、上の require "common" を無くす。
-  File.join base_dir, "..", "trema", "trema"
+  File.expand_path File.join( File.dirname( __FILE__ ), "..", "trema", "trema" )
 end
