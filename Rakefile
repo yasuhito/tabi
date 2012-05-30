@@ -229,21 +229,39 @@ namespace :kill do
 end
 
 
-namespace :run do
-  desc "start DHCP server"
-  task :dhcp do
-    # [TODO] subnet がハードコードされているのを直す
-    # [TODO] 複数クライアントに対応
+################################################################################
+# DHCP server
+################################################################################
+
+def etc_file path
+  file = File.open( File.join( tmp_dir, File.basename( path ) ), "w" )
+  yield file
+  file.close
+  sh "sudo cp #{ file.path } #{ File.dirname path }"
+end
+
+
+def maybe_install_dhcpd
+  if not FileTest.exist?( "/var/lib/dpkg/info/isc-dhcp-server.md5sums" )
     sh "sudo apt-get install isc-dhcp-server"
-    tmp_dhcpd_conf = File.join( tmp_dir, "dhcpd.conf" )
-    File.open( tmp_dhcpd_conf, "w" ) do | file |
-      file.puts <<-EOF
+  end
+end
+
+
+def setup_dhcpd
+  etc_file( "/etc/default/isc-dhcp-server" ) do | file |
+    file.puts %{INTERFACES="veth"}
+  end
+
+  subnet = $network[/\A([^\/]+)/]
+  etc_file( "/etc/dhcp/dhcpd.conf" ) do | file |
+    file.puts <<-EOF
 option domain-name-servers 8.8.8.8;
 
 default-lease-time 600;
 max-lease-time 7200;
 
-subnet 192.168.0.0 netmask #{ $netmask } {
+subnet #{ subnet } netmask #{ $netmask } {
   option routers #{ $gateway };
   host guest {
     hardware ethernet #{ $vm[ :guest ][ :mac ]};
@@ -251,10 +269,37 @@ subnet 192.168.0.0 netmask #{ $netmask } {
   }
 }
 EOF
-    end
-    sh "sudo cp #{ tmp_dhcpd_conf } /etc/dhcp/"
+  end
+end
+
+
+def start_dhcpd
+  sh "sudo start isc-dhcp-server"
+end
+
+
+def maybe_kill_dhcpd
+  if /start\/running/=~ `status isc-dhcp-server`
     sh "sudo stop isc-dhcp-server"
-    sh "sudo start isc-dhcp-server"
+  end
+end
+
+
+namespace :run do
+  desc "start DHCP server"
+  task :dhcp do
+    maybe_install_dhcpd
+    setup_dhcpd
+    maybe_kill_dhcpd
+    start_dhcpd
+  end
+end
+
+
+namespace :kill do
+  desc "kill dhcp server"
+  task :dhcp do
+    maybe_kill_dhcpd
   end
 end
 
