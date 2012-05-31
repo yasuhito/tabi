@@ -109,10 +109,8 @@ end
 
 
 desc "show network config"
-task :show do
-  if db_server_running?
-    sh "#{ vsctl } show"
-  end
+task :show => "run:db_server" do
+  sh "#{ vsctl } show"
 end
 
 
