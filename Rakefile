@@ -114,21 +114,6 @@ task :show => "run:db_server" do
 end
 
 
-task :nat do
-  sh "sudo ip link delete veth" rescue nil
-  sh "sudo ip link add name veth type veth peer name veths"
-  sh "sudo ifconfig veth #{ $gateway }/24"
-  sh "sudo ifconfig veths up"
-  sh "sudo ifconfig veth up"
-  sh "#{ vsctl } del-port #{ $switch[ :guest ][ :bridge ] } veths" rescue nil
-  sh "#{ vsctl } add-port #{ $switch[ :guest ][ :bridge ] } veths"
-  sh "sudo iptables -F"
-  sh "sudo iptables -A FORWARD -i veth -o eth0 -j ACCEPT"
-  sh "sudo iptables -t nat -F"
-  sh "sudo iptables -t nat -A POSTROUTING -o eth0 -s #{ $network } -j MASQUERADE"
-end
-
-
 namespace :run do
   desc "start vswitch"
   task :vswitch => [ vswitchd, vswitch_log_dir, vswitch_run_dir, "run:db_server" ] do
@@ -146,6 +131,26 @@ namespace :kill do
   task :vswitch do
     maybe_kill_vswitch
   end
+end
+
+
+################################################################################
+# NAT
+################################################################################
+
+desc "enable NAT"
+task :nat do
+  sh "sudo ip link delete veth" rescue nil
+  sh "sudo ip link add name veth type veth peer name veths"
+  sh "sudo ifconfig veth #{ $gateway }/24"
+  sh "sudo ifconfig veths up"
+  sh "sudo ifconfig veth up"
+  sh "#{ vsctl } del-port #{ $switch[ :guest ][ :bridge ] } veths" rescue nil
+  sh "#{ vsctl } add-port #{ $switch[ :guest ][ :bridge ] } veths"
+  sh "sudo iptables -F"
+  sh "sudo iptables -A FORWARD -i veth -o eth0 -j ACCEPT"
+  sh "sudo iptables -t nat -F"
+  sh "sudo iptables -t nat -A POSTROUTING -o eth0 -s #{ $network } -j MASQUERADE"
 end
 
 
