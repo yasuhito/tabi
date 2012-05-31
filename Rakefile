@@ -8,7 +8,6 @@ require "common"
 require "config"
 require "rake"
 require "rake/clean"
-require "rdoc/task"
 
 
 ################################################################################
@@ -416,11 +415,13 @@ end
 # tabi command (gli related tasks)
 ################################################################################
 
-Rake::RDocTask.new do |rd|
-  rd.main = "README.rdoc"
-  rd.rdoc_files.include("README.rdoc","lib/**/*.rb","bin/**/*")
-  rd.title = 'Your application title'
-end
+# require "rdoc/task"
+
+# Rake::RDocTask.new do |rd|
+#   rd.main = "README.rdoc"
+#   rd.rdoc_files.include("README.rdoc","lib/**/*.rb","bin/**/*")
+#   rd.title = 'Your application title'
+# end
 
 # require "rubygems/package_task"
 #
