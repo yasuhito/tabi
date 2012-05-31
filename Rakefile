@@ -385,9 +385,8 @@ end
 # Trema
 ################################################################################
 
-# [TODO] vswitch が動いてない状態でいきなり rake trema しても動くように
 desc "run controller"
-task :trema do
+task :trema => "run:vswitch" do
   $switch.each do | name, attr |
     sh "#{ vsctl } set-controller #{ attr[ :bridge ] } tcp:127.0.0.1"
   end
