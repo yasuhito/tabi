@@ -9,7 +9,6 @@ require "config"
 require "rake"
 require "rake/clean"
 require "rdoc/task"
-require "rubygems/package_task"
 
 
 ################################################################################
@@ -423,10 +422,11 @@ Rake::RDocTask.new do |rd|
   rd.title = 'Your application title'
 end
 
-spec = eval(File.read('tabi.gemspec'))
-
-Gem::PackageTask.new(spec) do |pkg|
-end
+# require "rubygems/package_task"
+#
+# spec = eval(File.read('tabi.gemspec'))
+# Gem::PackageTask.new(spec) do |pkg|
+# end
 
 require 'rake/testtask'
 Rake::TestTask.new do |t|
