@@ -444,9 +444,16 @@ task :default => :test
 # VM setup
 ################################################################################
 
+def squid_running?
+  FileTest.exists? "/var/run/squid3.pid"
+end
+
+
 namespace :run do
   desc "start squid"
   task :squid do
+    next if squid_running?
+    
     etc_squid = "/etc/squid3/"
 
     sh "sudo apt-get install squid3"
