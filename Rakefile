@@ -449,20 +449,20 @@ def squid_running?
 end
 
 
-namespace :run do
-  desc "start squid"
-  task :squid do
-    next if squid_running?
-    
-    etc_squid = "/etc/squid3/"
-
+def maybe_install_squid
+  if not FileTest.exist?( "/var/lib/dpkg/info/squid3.md5sums" )
     sh "sudo apt-get install squid3"
-    sh "sudo cp #{ File.join script_dir, "redirector.rb" } #{ etc_squid }"
-    sh "sudo chmod +x #{ etc_squid }/redirector.rb"
+  end
+end
 
-    tmp_squid_conf = File.join( tmp_dir, "squid.conf" )
-    File.open( tmp_squid_conf, "w" ) do | file |
-      file.puts <<-EOF
+
+def setup_squid
+  etc_squid = "/etc/squid3/"
+  sh "sudo cp #{ File.join script_dir, "redirector.rb" } #{ etc_squid }"
+  sh "sudo chmod +x #{ etc_squid }/redirector.rb"
+
+  etc_file( File.join etc_squid, "squid.conf" ) do | file |
+    file.puts <<-EOF
 acl all src all
 acl localhost src 127.0.0.1/32
 acl localnet src #{ $network }
@@ -485,12 +485,29 @@ access_log /var/log/squid3/access.log squid
 hosts_file /etc/hosts
 coredump_dir /var/spool/squid3
 EOF
-    end
-    sh "sudo cp #{ tmp_squid_conf } #{ etc_squid }"
-    sh "sudo service squid3 restart"
+  end
+end
 
-    sh "sudo iptables -t nat -F"
-    sh "sudo iptables -t nat -A PREROUTING -i veth -p tcp -m tcp --dport 80 -j REDIRECT --to-ports #{ $proxy_port }"
+
+def start_squid
+  sh "sudo service squid3 start"
+end
+
+
+def start_port_redirect
+  sh "sudo iptables -t nat -F"
+  sh "sudo iptables -t nat -A PREROUTING -i veth -p tcp -m tcp --dport 80 -j REDIRECT --to-ports #{ $proxy_port }"
+end
+
+
+namespace :run do
+  desc "start squid"
+  task :squid do
+    next if squid_running?
+    maybe_install_squid
+    setup_squid
+    start_squid
+    start_port_redirect
   end
 end
 
@@ -514,73 +531,9 @@ EOF
 end
 
 
-def setup_transparent_proxy
-  sh "sudo apt-get install squid"
-
-  # [TODO] squid 設定ディレクトリも変数か定数にする
-  sh "sudo cp #{ File.join script_dir, "redirector.rb" } /etc/squid/"
-  sh "sudo chmod +x /etc/squid/redirector.rb"
-
-  tmp_squid_conf = File.join( tmp_dir, "squid.conf" )
-  File.open( tmp_squid_conf, "w" ) do | file |
-    file.puts <<-EOF
-acl all src all
-acl localhost src 127.0.0.1/32
-acl localnet src #{ $network }
-
-acl SSL_ports port 443
-acl Safe_ports port 80
-acl Safe_ports port 443
-
-http_access allow localnet
-http_access allow localhost
-http_access deny all
-icp_access deny all
-
-http_port #{ $proxy_port } transparent
-url_rewrite_program /etc/squid/redirector.rb
-always_direct allow all
-
-acl CONNECT method CONNECT
-access_log /var/log/squid/access.log squid
-hosts_file /etc/hosts
-coredump_dir /var/spool/squid
-EOF
-  end
-  sh "sudo cp #{ tmp_squid_conf } /etc/squid/"
-  sh "sudo service squid restart"
-
-  tmp_iptables_rules = File.join( tmp_dir, "iptables.rules" )
-  File.open( tmp_iptables_rules, "w" ) do | file |
-    file.puts <<-EOF
-*nat
-:PREROUTING ACCEPT [0:0]
-:INPUT ACCEPT [0:0]
-:OUTPUT ACCEPT [0:0]
-:POSTROUTING ACCEPT [0:0]
--A PREROUTING -i eth0 -p tcp -m tcp --dport 80 -j REDIRECT --to-ports 3128
-COMMIT
-EOF
-  end
-  sh "sudo cp #{ tmp_iptables_rules } /etc/"
-
-  tmp_iptables_start = File.join( tmp_dir, "iptables_start" )
-  File.open( tmp_iptables_start, "w" ) do | file |
-    file.puts <<-EOF
-#!/bin/sh
-/sbin/iptables-restore < /etc/iptables.rules
-exit 0
-EOF
-  end
-  sh "sudo cp #{ tmp_iptables_start } /etc/network/if-pre-up.d/"
-  sh "sudo chmod a+x /etc/network/if-pre-up.d/iptables_start"
-end
-
-
 namespace :init do
   desc "initialize management VM environment"
   task :management do
     setup_network
-    setup_transparent_proxy
   end
 end
