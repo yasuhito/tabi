@@ -287,6 +287,7 @@ def maybe_kill_dhcpd
 end
 
 
+# [TODO] management VM 以外で run:dhcp をやろうとすると怒るようにする
 namespace :run do
   desc "start DHCP server"
   task :dhcp do
