@@ -374,11 +374,9 @@ $vm.each do | name, attr |
   end
 
 
-  namespace :vm do
-    desc "start #{ name } VM"
-    task name => [ runsh( name ), "run:vswitch" ] do
-      sh "sudo #{ runsh name }"
-    end
+  desc "start #{ name } VM"
+  task name => [ runsh( name ), "run:vswitch" ] do
+    sh "sudo #{ runsh name }"
   end
 end
 
