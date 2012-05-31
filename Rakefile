@@ -489,6 +489,11 @@ EOF
 end
 
 
+def maybe_kill_squid
+  sh "sudo service squid3 stop" if squid_running?
+end
+
+
 def start_squid
   sh "sudo service squid3 start"
 end
@@ -506,8 +511,16 @@ namespace :run do
     next if squid_running?
     maybe_install_squid
     setup_squid
+    maybe_kill_squid
     start_squid
     start_port_redirect
+  end
+end
+
+
+namespace :kill do
+  task :squid do
+    maybe_kill_squid
   end
 end
 
