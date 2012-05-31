@@ -106,9 +106,9 @@ def add_switch bridge, dpid
 end
 
 
-# [TODO] VM の設定なども表示する & 名前を config に変える
-desc "show network config"
-task :show => "run:db_server" do
+# [TODO] VM の設定なども表示する
+desc "show configuration"
+task :config => "run:db_server" do
   sh "#{ vsctl } show"
 end
 
