@@ -249,8 +249,10 @@ end
 
 
 def setup_dhcpd
+  sh "sudo cp #{ File.join script_dir, "isc-dhcp-server.conf" } /etc/init/"
+
   etc_file( "/etc/default/isc-dhcp-server" ) do | file |
-    file.puts %{INTERFACES="veth"}
+    file.puts %{INTERFACES="eth0"}
   end
 
   subnet = $network[/\A([^\/]+)/]
