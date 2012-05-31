@@ -411,7 +411,12 @@ end
 
 desc "show todo"
 task :todo do
-  sh %{find . -name "*.rb" | xargs grep -n -A1 -B1 "\\[TODO\\]" -}
+  cd File.dirname( __FILE__ ) do
+    files = FileList[ "*/**/*.rb" ] + FileList[ "Rakefile", "bin/tabi" ]
+    files.each do | each |
+      sh %{grep -H -n -A1 -B1 "\\[TODO\\]" #{ each }}, :verbose => false rescue nil
+    end
+  end
 end
 
 
