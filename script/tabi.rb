@@ -64,7 +64,7 @@ class Tabi < Controller
 
     if @user_db.pending?( message.macsa )
       if message.http?
-        packet_out_management message
+        packet_out_service_vm message
       elsif message.arp? or message.dhcp? or message.dns?
         flood message
       else
@@ -109,12 +109,12 @@ class Tabi < Controller
   end
 
 
-  def dpid_management
-    $switch[ :management ][ :dpid ]
+  def dpid_service
+    $switch[ :service ][ :dpid ]
   end
 
 
-  def management_vm_port
+  def service_vm_port
     1
   end
 
@@ -137,21 +137,21 @@ class Tabi < Controller
   end
 
 
-  def packet_out_management message
+  def packet_out_service_vm message
     # [TODO] ActionSetDlDst.new( "00:11:22:33:44:55" ) と書けるように Trema 本体を修正
     send_packet_out(
-      dpid_management,
+      dpid_service,
       :packet_in => message,
       :actions => [
-        ActionSetDlDst.new( :dl_dst => Trema::Mac.new( $vm[ :management ][ :mac ] ) ),
-        ActionOutput.new( management_vm_port )
+        ActionSetDlDst.new( :dl_dst => Trema::Mac.new( $vm[ :service ][ :mac ] ) ),
+        ActionOutput.new( service_vm_port )
       ]
     )
   end
 
 
   def flood message
-    [ dpid_guest, dpid_management ].each do | each |
+    [ dpid_guest, dpid_service ].each do | each |
       packet_out each, message, OFPP_FLOOD
     end
   end

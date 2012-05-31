@@ -288,10 +288,10 @@ def maybe_kill_dhcpd
 end
 
 
-# [TODO] management VM 以外で run:dhcp をやろうとすると怒るようにする
+# [TODO] service VM 以外で run:dhcp をやろうとすると怒るようにする
 namespace :run do
   desc "start DHCP server"
-  task :dhcp => "management:networking" do
+  task :dhcp => "service:networking" do
     next if dhcpd_running?
     maybe_install_dhcpd
     setup_dhcpd
@@ -498,21 +498,21 @@ def start_squid
 end
 
 
-def start_port_redirect
+def redirect_http
   sh "sudo iptables -t nat -F"
-  sh "sudo iptables -t nat -A PREROUTING -i veth -p tcp -m tcp --dport 80 -j REDIRECT --to-ports #{ $proxy_port }"
+  sh "sudo iptables -t nat -A PREROUTING -i eth0 -p tcp -m tcp --dport 80 -j REDIRECT --to-ports #{ $proxy_port }"
 end
 
 
 namespace :run do
   desc "start squid"
   task :squid do
+    redirect_http
     next if squid_running?
     maybe_install_squid
     setup_squid
     maybe_kill_squid
     start_squid
-    start_port_redirect
   end
 end
 
@@ -534,7 +534,7 @@ iface lo inet loopback
 
 auto eth0
 iface eth0 inet static
-  address #{ $vm[ :management ][ :ip ] }
+  address #{ $vm[ :service ][ :ip ] }
   netmask #{ $netmask }
   gateway #{ $gateway }
 EOF
@@ -544,7 +544,7 @@ EOF
 end
 
 
-namespace :management do
+namespace :service do
   task :networking do
     etc_file( "/etc/network/interfaces" ) do | file |
       file.puts <<-EOF
@@ -553,7 +553,7 @@ iface lo inet loopback
 
 auto eth0
 iface eth0 inet static
-  address #{ $vm[ :management ][ :ip ] }
+  address #{ $vm[ :service ][ :ip ] }
   netmask #{ $netmask }
   gateway #{ $gateway }
 EOF
@@ -562,6 +562,6 @@ EOF
   end
 
 
-  desc "setup management VM"
+  desc "setup service VM"
   task :setup => [ "run:dhcp", "run:squid" ]
 end
