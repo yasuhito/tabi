@@ -1,0 +1,56 @@
+= <tt>tabi</tt>
+
+tabi cloud-router management command
+
+    tabi [global options] command_name [command-specific options] [--] arguments...
+
+* Use the command +help+ to get a summary of commands
+* Use the command <tt>help command_name</tt> to get a help for +command_name+
+* Use <tt>--</tt> to stop command line argument processing; useful if your arguments have dashes in them
+
+== Global Options
+These options are available for any command and are specified before the name of the command
+
+[<tt>--help</tt>] Show this message
+== Commands
+[<tt>allow</tt>] Allows user's connection
+[<tt>deny</tt>] Denies user's connection
+[<tt>help</tt>] Shows list of commands or help for one command
+[<tt>pending</tt>] Adds a user to waiting list
+
+=== <tt>allow MAC_address ...</tt>
+
+Allows user's connection
+
+
+Allows the internet connection of specified pending user.
+
+
+=== <tt>deny MAC_address ...</tt>
+
+Denies user's connection
+
+
+Denies the internet connection of specified pending user.
+
+
+=== <tt>help [command]</tt>
+
+Shows list of commands or help for one command
+
+Gets help for the application or its commands.  Can also list the commands in a way helpful to creating a bash-style completion function
+
+==== Options
+These options are specified *after* the command.
+
+[<tt>-c, --completion</tt>] List all commands one line at a time, for use with shell completion ([command] argument is partial command to match)
+=== <tt>pending MAC_address ...</tt>
+
+Adds a user to waiting list
+
+
+Adds a user to pending approval queue. One can allow or deny the
+internet connection of the pending users with "tabi allow" or "tabi
+deny" command.
+
+
