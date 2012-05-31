@@ -449,7 +449,7 @@ namespace :run do
   task :squid do
     etc_squid = "/etc/squid3/"
 
-    sh "sudo apt-get install squid"
+    sh "sudo apt-get install squid3"
     sh "sudo cp #{ File.join script_dir, "redirector.rb" } #{ etc_squid }"
     sh "sudo chmod +x #{ etc_squid }/redirector.rb"
 
