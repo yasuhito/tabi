@@ -195,7 +195,8 @@ def db
   File.join vswitch_dir, "conf.db"
 end
 
-file db => [ db_server, vswitch_dir ] do
+task :db => [ db_server, vswitch_dir ] do
+  next if FileTest.exists?( db )
   sh "#{ db_tool } create #{ db } #{ File.join object_dir, "share/openvswitch/vswitch.ovsschema" }"
 end
 
@@ -212,11 +213,10 @@ end
 
 namespace :run do
   desc "start db server"
-  task :db_server => [ db_server, db, vswitch_log_dir, vswitch_run_dir ] do
-    if not db_server_running?
-      maybe_kill_db_server
-      start_db_server
-    end
+  task :db_server => [ db_server, :db, vswitch_log_dir, vswitch_run_dir ] do
+    next if db_server_running?
+    maybe_kill_db_server
+    start_db_server
   end
 end
 
