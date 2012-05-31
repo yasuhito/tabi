@@ -564,5 +564,5 @@ EOF
 
 
   desc "setup management VM"
-  task :setup => [ "run:dhcpd", "run:squid" ]
+  task :setup => [ "run:dhcp", "run:squid" ]
 end
