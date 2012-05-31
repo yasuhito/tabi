@@ -61,10 +61,9 @@ end
 
 
 def maybe_kill_vswitch
-  if vswitch_running?
-    pid = `cat #{ vswitch_pid }`.chomp
-    sh "sudo kill #{ pid }" rescue nil
-  end
+  return if not vswitch_running?
+  pid = `cat #{ vswitch_pid }`.chomp
+  sh "sudo kill #{ pid }" rescue nil
 end
 
 
@@ -117,8 +116,7 @@ task :show do
 end
 
 
-# MEMO: 各 VM で "sudo route add default gw 192.168.0.254
-def start_nat
+task :nat do
   sh "sudo ip link delete veth" rescue nil
   sh "sudo ip link add name veth type veth peer name veths"
   sh "sudo ifconfig veth #{ $gateway }/24"
@@ -126,22 +124,21 @@ def start_nat
   sh "sudo ifconfig veth up"
   sh "#{ vsctl } del-port #{ $switch[ :guest ][ :bridge ] } veths" rescue nil
   sh "#{ vsctl } add-port #{ $switch[ :guest ][ :bridge ] } veths"
+  sh "sudo iptables -F"
   sh "sudo iptables -A FORWARD -i veth -o eth0 -j ACCEPT"
+  sh "sudo iptables -t nat -F"
   sh "sudo iptables -t nat -A POSTROUTING -o eth0 -s #{ $network } -j MASQUERADE"
 end
 
 
 namespace :run do
   desc "start vswitch"
-  task :vswitch => [ vswitchd, vswitch_log_dir, vswitch_run_dir ] do
-    Rake::Task[ "run:db_server" ].invoke
-    if not vswitch_running?
-      start_vswitch
-      $switch.each do | name, attr |
-        add_switch attr[ :bridge ], attr[ :dpid ]
-      end
+  task :vswitch => [ vswitchd, vswitch_log_dir, vswitch_run_dir, "run:db_server" ] do
+    next if vswitch_running?
+    start_vswitch
+    $switch.each do | name, attr |
+      add_switch attr[ :bridge ], attr[ :dpid ]
     end
-    start_nat
   end
 end
 
@@ -184,10 +181,9 @@ end
 
 
 def maybe_kill_db_server
-  if db_server_running?
-    pid = `cat #{ db_server_pid }`.chomp
-    sh "kill #{ pid }" rescue nil
-  end
+  return if not db_server_running?
+  pid = `cat #{ db_server_pid }`.chomp
+  sh "kill #{ pid }" rescue nil
 end
 
 
@@ -215,7 +211,6 @@ namespace :run do
   desc "start db server"
   task :db_server => [ db_server, :db, vswitch_log_dir, vswitch_run_dir ] do
     next if db_server_running?
-    maybe_kill_db_server
     start_db_server
   end
 end
