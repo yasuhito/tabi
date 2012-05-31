@@ -413,19 +413,21 @@ end
 # tabi command (gli related tasks)
 ################################################################################
 
-# require "rdoc/task"
+require "rdoc/task"
 
-# Rake::RDocTask.new do |rd|
-#   rd.main = "README.rdoc"
-#   rd.rdoc_files.include("README.rdoc","lib/**/*.rb","bin/**/*")
-#   rd.title = 'Your application title'
-# end
+Rake::RDocTask.new do |rd|
+  rd.main = "README.rdoc"
+  rd.rdoc_files.include("README.rdoc","lib/**/*.rb","bin/**/*")
+  rd.title = 'Your application title'
+end
+
 
 # require "rubygems/package_task"
 #
 # spec = eval(File.read('tabi.gemspec'))
 # Gem::PackageTask.new(spec) do |pkg|
 # end
+
 
 # require 'rake/testtask'
 # Rake::TestTask.new do |t|
