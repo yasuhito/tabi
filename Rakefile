@@ -291,7 +291,7 @@ end
 # [TODO] management VM 以外で run:dhcp をやろうとすると怒るようにする
 namespace :run do
   desc "start DHCP server"
-  task :dhcp do
+  task :dhcp => "management:networking" do
     next if dhcpd_running?
     maybe_install_dhcpd
     setup_dhcpd
@@ -545,9 +545,24 @@ EOF
 end
 
 
-namespace :init do
-  desc "initialize management VM environment"
-  task :management do
-    setup_network
+namespace :management do
+  task :networking do
+    etc_file( "/etc/network/interfaces" ) do | file |
+      file.puts <<-EOF
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet static
+  address #{ $vm[ :management ][ :ip ] }
+  netmask #{ $netmask }
+  gateway #{ $gateway }
+EOF
+    end
+    sh "sudo /etc/init.d/networking restart"
   end
+
+
+  desc "setup management VM"
+  task :setup => [ "run:dhcpd", "run:squid" ]
 end
