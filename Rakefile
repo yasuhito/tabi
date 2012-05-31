@@ -482,6 +482,7 @@ EOF
     sh "sudo cp #{ tmp_squid_conf } #{ etc_squid }"
     sh "sudo service squid3 restart"
 
+    sh "sudo iptables -t nat -F"
     sh "sudo iptables -t nat -A PREROUTING -i veth -p tcp -m tcp --dport 80 -j REDIRECT --to-ports #{ $proxy_port }"
   end
 end
