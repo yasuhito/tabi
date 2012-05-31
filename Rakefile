@@ -233,6 +233,11 @@ end
 # DHCP server
 ################################################################################
 
+def dhcpd_running?
+  /start\/running/=~ `status isc-dhcp-server`
+end
+
+
 def etc_file path
   file = File.open( File.join( tmp_dir, File.basename( path ) ), "w" )
   yield file
@@ -281,9 +286,7 @@ end
 
 
 def maybe_kill_dhcpd
-  if /start\/running/=~ `status isc-dhcp-server`
-    sh "sudo stop isc-dhcp-server"
-  end
+  sh "sudo stop isc-dhcp-server" if dhcpd_running?
 end
 
 
@@ -291,6 +294,7 @@ end
 namespace :run do
   desc "start DHCP server"
   task :dhcp do
+    next if dhcpd_running?
     maybe_install_dhcpd
     setup_dhcpd
     maybe_kill_dhcpd
