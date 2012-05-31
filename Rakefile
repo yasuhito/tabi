@@ -519,6 +519,7 @@ end
 
 
 namespace :kill do
+  desc "kill squid"
   task :squid do
     maybe_kill_squid
   end
