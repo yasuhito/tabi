@@ -114,8 +114,7 @@ end
 
 
 namespace :run do
-  desc "start vswitch"
-  task :vswitch => [ vswitchd, vswitch_log_dir, vswitch_run_dir, "run:db_server" ] do
+  task :vswitch => [ vswitchd, vswitch_log_dir, vswitch_run_dir, :nat ] do
     next if vswitch_running?
     start_vswitch
     $switch.each do | name, attr |
@@ -126,7 +125,6 @@ end
 
 
 namespace :kill do
-  desc "kill vswitch"
   task :vswitch do
     maybe_kill_vswitch
   end
@@ -137,8 +135,7 @@ end
 # NAT
 ################################################################################
 
-desc "enable NAT"
-task :nat do
+task :nat => "run:db_server" do
   sh "sudo ip link delete veth" rescue nil
   sh "sudo ip link add name veth type veth peer name veths"
   sh "sudo ifconfig veth #{ $gateway }/24"
@@ -210,7 +207,6 @@ end
 
 
 namespace :run do
-  desc "start db server"
   task :db_server => [ db_server, :db, vswitch_log_dir, vswitch_run_dir ] do
     next if db_server_running?
     start_db_server
@@ -219,7 +215,6 @@ end
 
 
 namespace :kill do
-  desc "kill db server"
   task :db_server do
     maybe_kill_db_server
   end
