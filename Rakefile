@@ -444,6 +444,49 @@ task :default => :test
 # VM setup
 ################################################################################
 
+namespace :run do
+  desc "start squid"
+  task :squid do
+    etc_squid = "/etc/squid3/"
+
+    sh "sudo apt-get install squid"
+    sh "sudo cp #{ File.join script_dir, "redirector.rb" } #{ etc_squid }"
+    sh "sudo chmod +x #{ etc_squid }/redirector.rb"
+
+    tmp_squid_conf = File.join( tmp_dir, "squid.conf" )
+    File.open( tmp_squid_conf, "w" ) do | file |
+      file.puts <<-EOF
+acl all src all
+acl localhost src 127.0.0.1/32
+acl localnet src #{ $network }
+
+acl SSL_ports port 443
+acl Safe_ports port 80
+acl Safe_ports port 443
+
+http_access allow localnet
+http_access allow localhost
+http_access deny all
+icp_access deny all
+
+http_port #{ $proxy_port } transparent
+url_rewrite_program #{ etc_squid }/redirector.rb
+always_direct allow all
+
+acl CONNECT method CONNECT
+access_log /var/log/squid3/access.log squid
+hosts_file /etc/hosts
+coredump_dir /var/spool/squid3
+EOF
+    end
+    sh "sudo cp #{ tmp_squid_conf } #{ etc_squid }"
+    sh "sudo service squid3 restart"
+
+    sh "sudo iptables -t nat -A PREROUTING -i veth -p tcp -m tcp --dport 80 -j REDIRECT --to-ports #{ $proxy_port }"
+  end
+end
+
+
 def setup_network
   tmp_interfaces = File.join( tmp_dir, "interfaces" )
   File.open( tmp_interfaces, "w" ) do | file |
