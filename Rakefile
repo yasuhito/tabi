@@ -290,7 +290,6 @@ end
 
 # [TODO] service VM 以外で run:dhcp をやろうとすると怒るようにする
 namespace :run do
-  desc "start DHCP server"
   task :dhcp => "service:networking" do
     next if dhcpd_running?
     maybe_install_dhcpd
@@ -302,7 +301,6 @@ end
 
 
 namespace :kill do
-  desc "kill dhcp server"
   task :dhcp do
     maybe_kill_dhcpd
   end
@@ -505,7 +503,6 @@ end
 
 
 namespace :run do
-  desc "start squid"
   task :squid do
     redirect_http
     next if squid_running?
@@ -518,7 +515,6 @@ end
 
 
 namespace :kill do
-  desc "kill squid"
   task :squid do
     maybe_kill_squid
   end
@@ -560,8 +556,16 @@ EOF
     end
     sh "sudo /etc/init.d/networking restart"
   end
+end
 
 
-  desc "setup service VM"
-  task :setup => [ "run:dhcp", "run:squid" ]
+namespace :start do
+  desc "start services"
+  task :service => [ "run:dhcp", "run:squid" ]
+end
+
+
+namespace :stop do
+  desc "stop services"
+  task :service => [ "kill:dhcp", "kill:squid" ]
 end
