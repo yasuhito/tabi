@@ -10,13 +10,11 @@ require "fdb"
 require "user-db"
 
 
+# Trema::PacketIn にいくつかメソッドを追加
+#
 # [TODO] コントローラを eval ではなく普通に load するように Trema 本体を修正
 # ↓こういうのが "module Trema; class PacketIn ... end; end" とも書けるように。
 class Trema::PacketIn
-  # [TODO] このエイリアスを Trema 本体に追加
-  alias :dpid :datapath_id
-
-
   def http?
     tcp_dst_port == 80 or tcp_dst_port == 3000
   end
@@ -45,10 +43,15 @@ class Trema::PacketIn
 end
 
 
+# Facebook を使った認証 VLAN っぽいことをするための OpenFlow コントローラ
 class Tabi < Controller
+  SERVICE_VM_PORT = 1
+  DPID_GUEST = $switch[ :guest ][ :dpid ]
+  DPID_SERVICE = $switch[ :service ][ :dpid ]
+
+
   def start
-    @user_db = UserDB.new
-    @user_db.cleanup
+    @user_db = UserDB.new.cleanup
     @fdb = FDB.new
   end
 
@@ -60,41 +63,10 @@ class Tabi < Controller
 
   def packet_in dpid, message
     @fdb.learn message.macsa, message.in_port, dpid
-
-    if message.dhcp_pack?
-      @user_db.pending message.macda.to_s
-      packet_out dpid_guest, message, @fdb.port_no_of( message.macda )
-      return
-    end
-
-    if @user_db.pending?( message.macsa )
-      if message.http?
-        packet_out_service_vm message
-      elsif message.https?
-        # [TODO] FB だけに限定する
-        flood message
-      elsif message.arp? or message.dhcp? or message.dns?
-        flood message
-      else
-        # DROP
-      end
-    elsif @user_db.allowed?( message.macsa )
-      fdb_entry = @fdb[ message.macda ]
-      if fdb_entry
-        flow_mod fdb_entry.dpid, message, fdb_entry.port_no
-        packet_out fdb_entry.dpid, message, fdb_entry.port_no
-      else
-        flood message
-      end
-    elsif @user_db.denied?( message.macsa )
-      # DROP
+    if guest_packet? message
+      handle_guest_packets message
     else
-      fdb_entry = @fdb[ message.macda ]
-      if fdb_entry
-        packet_out fdb_entry.dpid, message, fdb_entry.port_no
-      else
-        flood message
-      end
+      handle_service_packets message
     end
   end
 
@@ -104,26 +76,60 @@ class Tabi < Controller
   ##############################################################################
 
 
+  def guest_packet? message
+    macsa = message.macsa
+    @user_db.pending?( macsa ) or @user_db.allowed?( macsa ) or @user_db.denied?( macsa )
+  end
+
+
+  def handle_guest_packets message
+    macsa = message.macsa
+    if @user_db.pending?( macsa )
+      handle_pending message
+    elsif @user_db.allowed?( macsa )
+      l2_switch message
+    elsif @user_db.denied?( macsa )
+      # DROP
+    end
+  end
+
+
+  def handle_service_packets message
+    @user_db.pending( message.macda ) if message.dhcp_pack?
+    l2_switch message
+  end
+
+
+  def handle_pending message
+    if message.http?
+      packet_out_service_vm message
+    elsif message.https?
+      # [TODO] FB だけに限定し、かつゲートウェイだけに出す
+      flood message
+    elsif message.arp? or message.dhcp? or message.dns?
+      flood message
+    else
+      # DROP
+    end
+  end
+
+
+  def l2_switch message
+    dpid, port_no = @fdb[ message.macda ]
+    if dpid and port_no
+      flow_mod dpid, message, port_no
+      packet_out dpid, message, port_no
+    else
+      flood message
+    end
+  end
+
+
   def switch_name dpid
     $switch.each do | name, attr |
       return name if attr[ :dpid ] == dpid
     end
     raise "Switch not found! (dpid = #{ dpid.to_hex })"
-  end
-
-
-  def dpid_guest
-    $switch[ :guest ][ :dpid ]
-  end
-
-
-  def dpid_service
-    $switch[ :service ][ :dpid ]
-  end
-
-
-  def service_vm_port
-    1
   end
 
 
@@ -148,18 +154,18 @@ class Tabi < Controller
   def packet_out_service_vm message
     # [TODO] ActionSetDlDst.new( "00:11:22:33:44:55" ) と書けるように Trema 本体を修正
     send_packet_out(
-      dpid_service,
+      DPID_SERVICE,
       :packet_in => message,
       :actions => [
         ActionSetDlDst.new( :dl_dst => Trema::Mac.new( $vm[ :service ][ :mac ] ) ),
-        ActionOutput.new( service_vm_port )
+        ActionOutput.new( SERVICE_VM_PORT )
       ]
     )
   end
 
 
   def flood message
-    [ dpid_guest, dpid_service ].each do | each |
+    [ DPID_GUEST, DPID_SERVICE ].each do | each |
       packet_out each, message, OFPP_FLOOD
     end
   end

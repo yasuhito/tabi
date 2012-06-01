@@ -14,13 +14,14 @@ class UserDB
     FileUtils.rm_rf pending_dir
     FileUtils.rm_rf allow_dir
     FileUtils.rm_rf deny_dir
+    self
   end
 
 
   def pending mac
-    return if allowed?( mac )
-    return if denied?( mac )
-    FileUtils.touch File.join( pending_dir, mac )
+    return if allowed?( mac.to_s )
+    return if denied?( mac.to_s )
+    FileUtils.touch File.join( pending_dir, mac.to_s )
   end
 
 
