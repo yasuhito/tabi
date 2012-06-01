@@ -24,9 +24,9 @@ class Tabi < Controller
   def packet_in dpid, message
     @fdb.learn message.macsa, message.in_port, dpid
     if guest_packet? message
-      handle_guest_packets message
+      handle_guest_packet message
     else
-      handle_service_packets message
+      handle_service_packet message
     end
   end
 
@@ -42,7 +42,7 @@ class Tabi < Controller
   end
 
 
-  def handle_guest_packets message
+  def handle_guest_packet message
     macsa = message.macsa
     if @user_db.pending?( macsa )
       handle_pending message
@@ -54,7 +54,7 @@ class Tabi < Controller
   end
 
 
-  def handle_service_packets message
+  def handle_service_packet message
     @user_db.pending( message.macda ) if message.dhcp_pack?
     l2_switch message
   end
