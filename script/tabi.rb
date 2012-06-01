@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-#
-# [TODO] LOGGING_LEVEL=debug で実行したときに Trema のログとアプリのログ
-#        が混ざって見づらいので、Trema のログだけ別ファイルに保存するように変更
 
 $LOAD_PATH.unshift File.expand_path( File.join File.dirname( __FILE__ ), "lib" )
 
@@ -10,10 +7,7 @@ require "fdb"
 require "user-db"
 
 
-# Trema::PacketIn にいくつかメソッドを追加
-#
-# [TODO] コントローラを eval ではなく普通に load するように Trema 本体を修正
-# ↓こういうのが "module Trema; class PacketIn ... end; end" とも書けるように。
+# Trema::PacketIn にいくつか便利メソッドを追加
 class Trema::PacketIn
   def http?
     tcp_dst_port == 80 or tcp_dst_port == 3000
@@ -31,6 +25,7 @@ class Trema::PacketIn
 
 
   def dhcp_pack?
+    # [TODO] ちゃんとパーズする
     if udp_src_port == 67 and udp_dst_port == 68
       data.unpack( "H*" )[ 0 ][ -116, 2 ] == "05"
     end
