@@ -21,11 +21,6 @@ class Tabi < Controller
   end
 
 
-  def switch_ready dpid
-    info "#{ switch_name dpid } switch connected"
-  end
-
-
   def packet_in dpid, message
     @fdb.learn message.macsa, message.in_port, dpid
     if guest_packet? message
@@ -87,14 +82,6 @@ class Tabi < Controller
     else
       flood message
     end
-  end
-
-
-  def switch_name dpid
-    $switch.each do | name, attr |
-      return name if attr[ :dpid ] == dpid
-    end
-    raise "Switch not found! (dpid = #{ dpid.to_hex })"
   end
 
 
