@@ -109,7 +109,7 @@ class Tabi < Controller
       DPID_SERVICE,
       :packet_in => message,
       :actions => [
-        ActionSetDlDst.new( :dl_dst => Trema::Mac.new( $vm[ :service ][ :mac ] ) ),
+        ActionSetDlDst.new( :dl_dst => Mac.new( $vm[ :service ][ :mac ] ) ),
         ActionOutput.new( SERVICE_VM_PORT )
       ]
     )
