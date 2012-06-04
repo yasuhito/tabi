@@ -1,9 +1,13 @@
 <h2>ユーザ</h2>
 
-<ul>
-  <% User.all.each do | each | %>
-  <li><%= each.name %> <%= h( "<" ) + each.email + h( ">" ) %> <%= link_to "allow", :action => :allow %>/<%= link_to "deny", :action => :deny %></li>
-  <% end %>
-</ul>
+<table>
+<% User.all.each do | each | %>
+  <tr class="<%= cycle('list_line_odd', 'list_line_even') %>">
 
-</ul>
+    <td class="list_description">
+      <%= each.name %> <%= h( "<" ) + each.email + h( ">" ) %>
+    </td>
+
+  </tr>
+<% end %>
+</table>
