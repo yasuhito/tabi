@@ -40,3 +40,5 @@ gem 'jquery-rails'
 
 # For tabi command
 gem 'gli'
+gem 'omniauth-facebook'
+gem 'devise'
