@@ -38,7 +38,8 @@ gem 'jquery-rails'
 # To use debugger
 # gem 'ruby-debug'
 
-# For tabi command
+# For tabi
 gem 'gli'
 gem 'omniauth-facebook'
 gem 'devise'
+gem 'system_timer'
