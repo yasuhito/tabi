@@ -1,7 +1,7 @@
-<h2>ユーザ</h2>
+<h2>Listing users</h2>
 
 <table>
-<% User.all.each do | each | %>
+<% @users.each do | each | %>
   <tr class="<%= cycle('list_line_odd', 'list_line_even') %>">
 
     <td class="list_description">
