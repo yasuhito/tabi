@@ -4,6 +4,10 @@
 <% @users.each do | each | %>
   <tr class="<%= cycle('list_line_odd', 'list_line_even') %>">
 
+    <td>
+      <%= image_tag( each.image, :class => 'list_image' ) %>
+    </td>
+
     <td class="list_description">
       <%= each.name %> <%= h( "<" ) + each.email + h( ">" ) %>
     </td>
