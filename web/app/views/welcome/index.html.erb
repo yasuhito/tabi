@@ -1,8 +1,10 @@
 <% if user_signed_in? %>
+<h2>インターネットに接続しました</h2>
   Sign in as <strong><%= current_user.name %></strong>
   |
   <%= link_to 'Sign out', destroy_user_session_path, :method => :delete %>
 <% else %>
-  インターネットアクセスが必要な場合は、Facebook でログインしてください。<br /><br />
+<h2>オフィス遠野 ログイン</h2>
+  インターネットアクセスが必要な場合は、facebook でログインしてください。<br /><br />
   <%= link_to image_tag( "/assets/facebook.png", { :border => '0', :alt => "Sign in with Facebook" } ), user_omniauth_authorize_path( :facebook ) %>
 <% end %>
