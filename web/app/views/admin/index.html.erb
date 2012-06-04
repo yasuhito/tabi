@@ -9,7 +9,10 @@
     </td>
 
     <td class="list_description">
-      <%= each.name %> <%= h( "<" ) + each.email + h( ">" ) %>
+      <dl>
+        <dt><%= each.name %> <%= h( "<" ) + each.email + h( ">" ) %></dt>
+        <dd>ユーザのプロフィール</dd>
+      </dl>
     </td>
 
   </tr>
