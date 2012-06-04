@@ -8,10 +8,24 @@
 </head>
 <body class='<%= controller.controller_name %>'>
 
-<p><%= notice %></p>
-<p><%= alert %></p>
+<div id="wrapper">
 
-<%= yield %>
+  <div id="header">
+    <h1>オフィス遠野</h1>
+  </div>
+
+  <div id="content">
+    <p><%= notice %></p>
+    <p><%= alert %></p>
+
+    <%= yield %>
+  </div>
+
+  <div id="footer">
+    Powered by Trema
+  </div>
+
+</div>
 
 </body>
 </html>
