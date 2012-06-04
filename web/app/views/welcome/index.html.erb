@@ -1,6 +1,6 @@
 <% if user_signed_in? %>
 <h2>インターネットに接続しました</h2>
-  Sign in as <strong><%= current_user.name %></strong> (MAC address <%= @client_mac =>)
+  Sign in as <strong><%= current_user.name %></strong> (MAC address = <%= @client_mac %>)
   |
   <%= link_to 'Sign out', destroy_user_session_path, :method => :delete %>
 <% else %>
