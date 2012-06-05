@@ -72,7 +72,7 @@ class Tabi < Controller
       end
     elsif @user_db.allowed?( message.macsa )
       fdb_entry = @fdb[ message.macda ]
-      if fdb_entry.port_no
+      if fdb_entry
         flow_mod fdb_entry.dpid, message, fdb_entry.port_no
         packet_out fdb_entry.dpid, message, fdb_entry.port_no
       else
