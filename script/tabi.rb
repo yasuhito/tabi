@@ -22,6 +22,11 @@ class Trema::PacketIn
   end
 
 
+  def https?
+    tcp_dst_port == 443
+  end
+
+
   def dhcp?
     ( udp_src_port == 67 and udp_dst_port == 68 ) or ( udp_src_port == 68 and udp_dst_port == 67 )
   end
@@ -65,6 +70,9 @@ class Tabi < Controller
     if @user_db.pending?( message.macsa )
       if message.http?
         packet_out_service_vm message
+      elsif message.https?
+        # [TODO] FB だけに限定する
+        flood message
       elsif message.arp? or message.dhcp? or message.dns?
         flood message
       else
