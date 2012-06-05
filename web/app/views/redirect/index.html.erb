@@ -1,0 +1,8 @@
+<% if user_signed_in? %>
+  Sign in as <strong><%= current_user.name %></strong>
+  |
+  <%= link_to 'Sign out', destroy_user_session_path, :method => :delete %>
+<% else %>
+  インターネットアクセスが必要な場合は、Facebook でログインしてください。<br /><br />
+  <%= link_to image_tag( "/assets/facebook.png", { :border => '0', :alt => "Sign in with Facebook" } ), user_omniauth_authorize_path( :facebook ) %>
+<% end %>

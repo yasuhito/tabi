@@ -2,9 +2,14 @@
 
 while not STDIN.closed? do
   break if STDIN.eof?
-  STDIN.gets # do nothing
+  request = STDIN.gets # do nothing
 
-  puts "http://192.168.0.1:3000/"
+  url = request[/\S+/]
+  if url == "http://192.168.0.1:3000/"
+    puts url
+  else
+    puts "http://192.168.0.1:3000/redirect"
+  end
   STDOUT.flush
   next
 end
