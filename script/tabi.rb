@@ -18,7 +18,7 @@ class Trema::PacketIn
 
 
   def http?
-    tcp_dst_port == 80
+    tcp_dst_port == 80 or tcp_dst_port == 3000
   end
 
 
