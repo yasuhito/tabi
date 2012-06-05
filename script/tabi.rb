@@ -71,10 +71,10 @@ class Tabi < Controller
         # DROP
       end
     elsif @user_db.allowed?( message.macsa )
-      port_no = @fdb.port_no_of( message.macda )
-      if port_no
-        flow_mod dpid, message, port_no
-        packet_out dpid, message, port_no
+      fdb_entry = @fdb[ message.macda ]
+      if fdb_entry.port_no
+        flow_mod fdb_entry.dpid, message, fdb_entry.port_no
+        packet_out fdb_entry.dpid, message, fdb_entry.port_no
       else
         flood message
       end
