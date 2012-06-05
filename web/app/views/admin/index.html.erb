@@ -1,0 +1,9 @@
+<h2>ユーザ</h2>
+
+<ul>
+  <% User.all.each do | each | %>
+  <li><%= each.name %> <%= h( "<" ) + each.email + h( ">" ) %> <%= link_to "allow", :action => :allow %>/<%= link_to "deny", :action => :deny %></li>
+  <% end %>
+</ul>
+
+</ul>

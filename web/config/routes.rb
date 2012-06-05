@@ -55,6 +55,7 @@ Web::Application.routes.draw do
   root :to => 'welcome#index'
 
   match 'redirect' => 'redirect#index'
+  match 'admin' => 'admin#index'
 
   # See how all your routes lay out with "rake routes"
 
